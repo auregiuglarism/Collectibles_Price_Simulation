@@ -1,0 +1,137 @@
+{
+  "name":"standard-and-poors-500-index-including-earnings-and-pe-ratio",
+  "title":"Standard and Poors 500 Index including Earnings And PE Ratio",
+  "description":"This dataset consists of S&P 500 (Standard and Poor's 500) index data including level, dividend, earnings and P/E (Price Earnings) ratio on a monthly basis since 1871. The S&P 500 (Standard and Poor's 500) is a free-float, capitalization-weighted index of the top 500 publicly listed stocks in the US (top 500 by market capitalization).",
+  "documentation":"The Standard & Poor's 500 Index (S&P 500) is an index of 500 stocks seen as a leading indicator of U.S. equities and a reflection of the performance of the large-cap universe, made up of companies selected by economists. The S&P 500 is a market value weighted index and one of the common benchmarks for the U.S. stock market; other S&P indexes include small-cap companies with market capitalization between $300 million and $2 billion, and an index of mid-cap companies. Investment products based on the S&P 500 include index funds and exchange-traded funds are available to investors.\n\nThe S&P 500 is widely regarded as the most accurate gauge of the performance of large-cap American equities. While the S&P 500 focuses on the large-cap sector of the market; it is considered representative of the market because it includes a significant portion of the total value of the market. The 500 companies included in the S&P 500 are selected by the S&P Index Committee, a team of analysts and economists at Standard & Poor's. These experts consider various factors when determining the 500 stocks that are included in the index, including market size, liquidity and industry grouping.\n\nThe S&P 500 has become a preferred index for U.S. stocks, unseating the Dow Jones Industrial Average (DJIA). The S&P 500 is perceived as more representative of the market because it is made of 500 companies, compared to the DJIA\u2019s 30. There is also a major difference in how companies are represented in either index. The S&P 500 uses a market cap methodology, giving a higher weighting to larger companies, whereas the DJIA uses a price weighting methodology which gives more expensive stocks a higher weighting. The market cap ranking is also seen as more representative of real market structure.\n\nThe P/E 10 ratio is a valuation measure, generally applied to broad equity indices, that uses real per-share earnings over a 10-year period. The P/E 10 ratio uses smoothed real earnings to eliminate the fluctuations in net income caused by variations in profit margins over a typical business cycle. The ratio was popularized by Yale University professor Robert Shiller, who won the Nobel Prize in Economic Sciences in 2013. It attracted a great deal of attention after Shiller warned that the frenetic U.S. stock market rally of the late-1990s would turn out to be a bubble. The P/E 10 ratio is also known as the \"cyclically adjusted PE (CAPE) ratio\" or \"Shiller PE ratio.\"",
+  "date_created":"1870",
+  "last_updated":"2019-09-01",
+  "version":"2019-09-01",
+  "update_frequency":"Monthly",
+  "temporal_coverage":"1871-01-01 to 2018-04-01",
+  "spatial_coverage":"United States",
+  "complexity":"Simple",
+  "license":"John Snow Labs Standard License",
+  "sources":[
+    {
+      "title":"John Snow Labs"
+    },
+    {
+      "title":"Robert Shiller, Yale University"
+    }
+  ],
+  "contributors":[
+    {
+      "title":"John Snow Labs",
+      "email":"support@JohnSnowLabs.com",
+      "uri":"http://www.JohnSnowLabs.com",
+      "role":"author"
+    }
+  ],
+  "source_license_requirements":"N/A",
+  "citation":"N/A",
+  "keywords":[
+    "S&P 500",
+    "CPI",
+    "P/E Ratio",
+    "Consumer Price Index",
+    "Standard and Poor's 500",
+    "Market Capitalization",
+    "Stock Price Index (SPI)"
+  ],
+  "other_titles":[
+    "Standard and Poor's 500 Index Data",
+    "S&P 500 Index Data including Dividend, Earnings and P/E Ratio",
+    "Standard and Poor's 500 Index Data 1871 to 2016"
+  ],
+  "resources":[
+    {
+      "path":"data.csv",
+      "name":"standard-and-poors-500-index-including-earnings-and-pe-ratio-csv",
+      "format":"csv",
+      "mediatype":"text/csv",
+      "schema":{
+        "fields":[
+          {
+            "name":"Date",
+            "description":"Date of monthly earnings data",
+            "type":"date",
+            "format":"any",
+            "constraints":{
+              "required":true
+            }
+          },
+          {
+            "name":"SP_500",
+            "description":"",
+            "type":"number",
+            "format":"currency",
+            "constraints":{
+              "required":true
+            }
+          },
+          {
+            "name":"Dividend",
+            "description":"Monthly dividend data is computed from the S&P four-quarter totals for the quarter since 1926, with linear interpolation to monthly figures. Dividend data before 1926 is from Cowles and associates (Common Stock Indexes, 2nd edition), interpolated from annual data.",
+            "type":"number",
+            "format":"currency"
+          },
+          {
+            "name":"Earnings",
+            "description":"Monthly earnings data is computed from the S&P four-quarter totals for the quarter since 1926, with linear interpolation to monthly figures. Earnings data before 1926 is from Cowles and associates (Common Stock Indexes, 2nd edtion), interpolated from annual data.",
+            "type":"number",
+            "format":"currency"
+          },
+          {
+            "name":"Consumer_Price_Index",
+            "description":"Monthly consumer price index to allow conversion to real values.",
+            "type":"number",
+            "constraints":{
+              "level":"Ratio",
+              "required":true
+            }
+          },
+          {
+            "name":"Long_Interest_Rate",
+            "description":"10 year interest rate (gov bonds)",
+            "type":"number",
+            "constraints":{
+              "level":"Ratio",
+              "required":true
+            }
+          },
+          {
+            "name":"Real_Price",
+            "description":"Real price",
+            "type":"number",
+            "format":"currency",
+            "constraints":{
+              "required":true
+            }
+          },
+          {
+            "name":"Real_Dividend",
+            "description":"Real dividend",
+            "type":"number",
+            "constraints":{
+              "level":"Ratio"
+            }
+          },
+          {
+            "name":"Real_Earnings",
+            "description":"Income of an individual or group after taking into consideration the effects of inflation on purchasing power.",
+            "type":"number",
+            "format":"currency"
+          },
+          {
+            "name":"PE_10_Ratio",
+            "description":"Cyclically Adjusted Price Earnings (P/E) Ratio",
+            "type":"number",
+            "constraints":{
+              "level":"Ratio"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

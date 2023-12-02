@@ -1,0 +1,71 @@
+{
+  "name":"gold-prices",
+  "title":"Gold Prices",
+  "description":"The Gold Prices dataset includes daily prices of Gold since April 1968.",
+  "documentation":"Of all the precious metals, gold is the most popular as an investment. Investors generally buy gold as a way of diversifying risk, especially through the use of futures contracts and derivatives. \n\nThe gold market is subject to speculation and volatility as are other markets. Compared to other precious metals used for investment, gold has the most effective safe haven and hedging properties across a number of countries. Daily prices of Gold since April, 1968 are included in the dataset.\n\nGold has been used throughout history as money and has been a relative standard for currency equivalents specific to economic regions or countries, until recent times. Many European countries implemented gold standards in the latter part of the 19th century until these were temporarily suspended in the financial crises involving World War I. After World War II, the Bretton Woods system pegged the United States dollar to gold at a rate of US$35 per troy ounce. The system existed until the 1971 Nixon Shock, when the US unilaterally suspended the direct convertibility of the United States dollar to gold and made the transition to a fiat currency system. The last currency to be divorced from gold was the Swiss Franc in 2000\n\nDataset Prices of gold are prices in London on morning fixing for 1 ounce of fine gold in USD.",
+  "date_created":"2014",
+  "last_updated":"2022-07-15",
+  "version":"2022-07-15",
+  "update_frequency":"Quarterly",
+  "temporal_coverage":"1968-04-01 to 2022-07-14",
+  "spatial_coverage":"N/A",
+  "complexity":"Simple",
+  "license":"John Snow Labs Standard License",
+  "sources":[
+    {
+      "title":"John Snow Labs"
+    },
+    {
+      "title":"Bundesbank Statistics"
+    }
+  ],
+  "contributors":[
+    {
+      "title":"John Snow Labs",
+      "email":"support@JohnSnowLabs.com",
+      "uri":"http://www.JohnSnowLabs.com",
+      "role":"author"
+    }
+  ],
+  "source_license_requirements":"N/A",
+  "citation":"N/A",
+  "keywords":[
+    "Gold Prices",
+    "Gold Price Fluctuations",
+    "Gold Daily Prices"
+  ],
+  "other_titles":[
+    "Bundesbank Gold Prices",
+    "Daily Gold Prices"
+  ],
+  "resources":[
+    {
+      "path":"data.csv",
+      "name":"gold-prices-csv",
+      "format":"csv",
+      "mediatype":"text/csv",
+      "schema":{
+        "fields":[
+          {
+            "name":"Date",
+            "description":"Gold Price data for specific dates",
+            "type":"date",
+            "format":"any",
+            "constraints":{
+              "required":true
+            }
+          },
+          {
+            "name":"Price",
+            "description":"Daily Gold Price",
+            "type":"number",
+            "format":"currency",
+            "constraints":{
+              "level":"Ratio"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

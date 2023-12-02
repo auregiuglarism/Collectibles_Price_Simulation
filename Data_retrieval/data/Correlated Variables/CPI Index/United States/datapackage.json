@@ -1,0 +1,80 @@
+{
+  "name":"us-consumer-price-index-and-inflation",
+  "title":"US Consumer Price Index and Inflation",
+  "description":"Consumer Price Index for All Urban Consumers (CPI-U) from U.S. Department Of Labor Bureau of Labor Statistics. This is a monthly time series from January 1913. Values are U.S. city averages for all items and 1982-84=100.\nConsumer Price Index value is calcuted starting from averages prices of 1982 to 1984.",
+  "documentation":"The U.S. Consumer Price Index (CPI) is a set of consumer price indices calculated by the U.S. Bureau of Labor Statistics (BLS). \n\nTo be precise, the BLS routinely computes many different CPIs that are used for different purposes. Each is a time series measure of the price of consumer goods and services. The BLS publishes the CPI monthly.\n\nAs an economic indicator. As the most widely used measure of inflation, the CPI is an indicator of the effectiveness of government fiscal and monetary policy. Especially for inflation targeting monetary policy by the Federal Reserve; however, the Federal Reserve System has recently begun favoring the Personal consumption expenditures price index (PCE) over the CPI as a measure of inflation. Business executives, labor leaders, and other private citizens also use the CPI as a guide in making economic decisions.\n\nAs a deflator of other economic series. The CPI and its components are used to adjust other economic series for price change and to translate these series into inflation-free dollars.\n\nAs a means for indexation (i.e. adjusting income payments). Over 2 million workers are covered by collective bargaining agreements which tie wages to the CPI. In the United States, the index affects the income of almost 80 million people as a result of statutory action: 47.8 million Social Security beneficiaries, about 4.1 million military and Federal Civil Service retirees and survivors, and about 22.4 million food stamp recipients. Changes in the CPI also affect the cost of lunches for the 26.7 million children who eat lunch at school. \n\nSome private firms and individuals use the CPI to keep rents, royalties, alimony payments and child support payments in line with changing prices. Since 1985, the CPI has been used to adjust the Federal income tax structure to prevent inflation-induced increases in taxes.",
+  "date_created":"2014",
+  "last_updated":"2020-01-14",
+  "version":"2020-01-14",
+  "update_frequency":"Never",
+  "temporal_coverage":"1913-01 to 2020-01",
+  "spatial_coverage":"United States",
+  "complexity":"Simple",
+  "license":"John Snow Labs Standard License",
+  "sources":[
+    {
+      "title":"John Snow Labs"
+    },
+    {
+      "title":"Department Of Labor Bureau of Labor Statistics"
+    }
+  ],
+  "contributors":[
+    {
+      "title":"John Snow Labs",
+      "email":"support@JohnSnowLabs.com",
+      "uri":"http://www.JohnSnowLabs.com",
+      "role":"author"
+    }
+  ],
+  "source_license_requirements":"N/A",
+  "citation":"N/A",
+  "keywords":[
+    "US Consumer Price Index",
+    "CPI",
+    "Consumer Price Index",
+    "Inflation"
+  ],
+  "other_titles":[
+    "US Consumer Price Index (CPI)",
+    "Department Of Labor Bureau of Labor Statistics CPI"
+  ],
+  "resources":[
+    {
+      "path":"data.csv",
+      "name":"us-consumer-price-index-and-inflation-csv",
+      "format":"csv",
+      "mediatype":"text/csv",
+      "schema":{
+        "fields":[
+          {
+            "name":"Date",
+            "description":"US Consumer Price Index and Inflation data date",
+            "type":"date",
+            "format":"any",
+            "constraints":{
+              "required":true
+            }
+          },
+          {
+            "name":"Price_Index",
+            "description":"Monthly Consumer Price Index. Values are U.S. city averages for all items and 1982-84=100.",
+            "type":"number",
+            "constraints":{
+              "level":"Interval",
+              "required":true
+            }
+          },
+          {
+            "name":"Price_Inflation",
+            "description":"Monthly Consumer Price Inflation. Values are for U.S. city averages for all items.",
+            "type":"number",
+            "constraints":{
+              "level":"Ratio"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

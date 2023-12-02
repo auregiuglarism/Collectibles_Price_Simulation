@@ -1,0 +1,73 @@
+{
+  "name":"ten-year-us-government-bond-yields",
+  "title":"Ten Year US Government Bond Yields",
+  "description":"This dataset includes a monthly data about interest rates of 10 year US Government bond yields. The dataset contains the records for interest rates for each relative month since 3rd April, 1953.",
+  "documentation":"This dataset has been sourced from Federal Reserve - Selected Interest Rates (Daily) - H.15. Yields on Treasury nominal securities at \u201cconstant maturity\u201d are interpolated by the U.S. Treasury from the daily yield curve for non-inflation-indexed Treasury securities. This curve, which relates the yield on a security to its time of maturity, is based on the closing market bid yields on actively traded Treasury securities in the over-the-counter market. These market yields are calculated from composites of quotations obtained by the Federal Reserve Bank of New York. The constant maturity yield values are read from the yield curve at fixed maturities. This method provides a yield for a 10-year maturity, for example, even if no outstanding security has exactly 10 years remaining to maturity.\n\nTreasuries are considered to be a low-risk investment because they are backed by the full faith and credit of the U.S. government, which includes the government's authority to raise taxes to cover its obligations. Because of their low risk, Treasuries have a low return compared to many other investments. Especially low Treasury yields like the ones seen from 2009 through 2013 can drive investors into riskier investments, such as stocks, where they can earn a higher return.\n\nThe different types of U.S. Treasuries include Treasury notes, Treasury bills and Treasury bonds, which come in different maturities up to 30 years. There are one-month, three-month, six-month, one-year, two-year, three-year, five-year, seven-year, 10-year, 20-year and 30-year securities. Each has a different yield, and the U.S. Treasury publishes the yields for all of these securities daily on its website. Under normal circumstances, longer-term Treasury securities have a higher yield than shorter-term Treasury securities. For example, the yield on a one-month security might be 0.06%, while the yield on a three-year security is 0.79% and the yield on a 30-year security is 3.70%.\n\nTreasury yields can go up if the Federal Reserve increases its target for the federal funds rate (in other words, if it tightens monetary policy), or even if investors merely expect the fed funds rate to go up. When demand for Treasury bonds decreases, Treasury yields increase; when demand increases; Treasury yields decrease.\n\nThis study is about 10-year nominal yields on US government bonds from the Federal Reserve. The 10-year government bond yield is considered a standard indicator of long-term interest rates. The data given shows  the monthly 10-year bond yield back to 1953. The 10-year treasury is the benchmark used to decide mortgage rates across the U.S. and is the most liquid and widely traded bond in the world. The 10-year treasury yield as of October 10th, 2018 is 3.15%.",
+  "date_created":"2017-11-08",
+  "last_updated":"2022-06-01",
+  "version":"2022-06-01",
+  "update_frequency":"Monthly",
+  "temporal_coverage":"1953-04-01 to 2022-06-01",
+  "spatial_coverage":"United States",
+  "complexity":"Simple",
+  "license":"John Snow Labs Standard License",
+  "sources":[
+    {
+      "title":"John Snow Labs"
+    },
+    {
+      "title":"Federal Reserve"
+    }
+  ],
+  "contributors":[
+    {
+      "title":"John Snow Labs",
+      "email":"support@JohnSnowLabs.com",
+      "uri":"http://www.JohnSnowLabs.com",
+      "role":"author"
+    }
+  ],
+  "source_license_requirements":"N/A",
+  "citation":"N/A",
+  "keywords":[
+    "US Bond Yields",
+    "US Treasury Securities",
+    "US Long-term Interest Rates",
+    "US Constant Maturity"
+  ],
+  "other_titles":[
+    "Ten Year Nominal Yields of US Government Bonds",
+    "Using 10 Year US Government Bond Yield for Indicating Long Term Interest Rates",
+    "Ten Year US Government Bond Yields from the Federal Reserve"
+  ],
+  "resources":[
+    {
+      "path":"data.csv",
+      "name":"ten-year-us-government-bond-yields-csv",
+      "format":"csv",
+      "mediatype":"text/csv",
+      "schema":{
+        "fields":[
+          {
+            "name":"Date_of_Bond_Yield",
+            "description":"The date on which the nominal yields for US Government bonds were recorded.",
+            "type":"date",
+            "format":"any",
+            "constraints":{
+              "required":true
+            }
+          },
+          {
+            "name":"Rate_in_Percent",
+            "description":"It represents the percent per year for long term interest rates.",
+            "type":"number",
+            "constraints":{
+              "level":"Ratio",
+              "required":true
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
