@@ -6,7 +6,7 @@ import pandas as pd
 # Rolex Daytona 116506 was first introduced in 2013, I've got daily prices until 2018
 
 # Open the file
-with open('data/Watches/Daytona 116506 Watch Market Prices - 2018-2023.csv') as csv_file:
+with open('Data_retrieval/data/Watches/Daytona 116506 Watch Market Prices - 2018-2023.csv') as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=',')
 
     prices_data = []
