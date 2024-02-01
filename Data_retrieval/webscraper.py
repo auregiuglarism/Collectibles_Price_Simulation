@@ -1,5 +1,5 @@
 import requests as r
-from pandas.io.json import json_normalize
+from pandas.io.json import * # json_normalize
 import json
 # from ph2 import ParseHub
 # from bs4 import BeautifulSoup
@@ -27,7 +27,7 @@ def getindexvalues_allartindexfamily():
     # pull data in json format
     index_values = res_get.json()
     index_headers = res_get.json()["cols"]
-    df = json_normalize(index_headers)
+    # df = json_normalize(index_headers)
 
     return index_values
 
@@ -46,7 +46,7 @@ def getstabilityvalues_allartindexfamily():
 
     stability_values = res_get.json()
     index_headers = res_get.json()["cols"]
-    df = json_normalize(index_headers)
+    # df = json_normalize(index_headers)
 
     return stability_values
 
@@ -65,7 +65,7 @@ def getpricevalues_allartindexfamily():
 
     price_values = res_get.json()
     index_headers = res_get.json()["cols"]
-    df = json_normalize(index_headers)
+    # df = json_normalize(index_headers)
 
     return price_values
 
@@ -83,41 +83,79 @@ def getstabilityvalues_allartindex():
 
     stability_values = res_get.json()
     index_headers = res_get.json()["cols"]
-    df = json_normalize(index_headers)
+    # df = json_normalize(index_headers)
 
     return stability_values
+
+def getK500_values():
+    url5 = 'https://pagead2.googlesyndication.com/getconfig/sodar?sv=200&tid=g'
+    res = r.get(url5)
+    search_cookies = res.cookies
+
+    get_data = {'method':'GET', "sv":"200", "tid":"gda", "tv":"r20240129", "st":"env"}
+
+    headers = {'user-agent':'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36 Edg/121.0.0.0'}
+
+    res_get = r.post(url5, data=get_data, cookies=search_cookies, headers=headers)
+
+    index_values = res_get.json()
+
+    return index_values
+
+def getChronopulse_values():
+    url6 = 'https://www.chrono24.com/api/priceindex/performance-chart.json?type=Market&period=max'
+    res = r.get(url6)
+    search_cookies = res.cookies
+
+    get_data = {'method':'GET', "type":"Market", "period":"max"}
+
+    headers = {'user-agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36 Edg/121.0.0.0'}
+
+    res_get = r.post(url6, data=get_data, cookies=search_cookies, headers=headers)
+
+    index_values = res_get.json()
+
+    return index_values
 
 
 ### Execution ###
 if __name__ == "__main__":
 
+    # Save Chronopulse values data
+    Chronopulse_values = getChronopulse_values()
+    print(Chronopulse_values)
+
+    # # Save K500 values data (NOT WORKING)
+    # K500_values = getK500_values()
+    # print(K500_values)
+
     # Save index_values all art index family data
-    index_values = getindexvalues_allartindexfamily()
-    index_values_flag = False # Only run once to save data
-    if(index_values_flag):
-        with open('price_values.json', 'w') as f:
-            json.dump(index_values, f)
+    # index_values = getindexvalues_allartindexfamily()
+    # index_values_flag = False # Only run once to save data
+    # if(index_values_flag):
+    #     with open('price_values.json', 'w') as f:
+    #         json.dump(index_values, f)
     
     # Save stability_values all art index family data
-    stability_values = getstabilityvalues_allartindexfamily()
-    stability_values_flag = False # Only run once to save data
-    if(stability_values_flag):
-        with open('stability_values.json', 'w') as f:
-            json.dump(stability_values, f)
+    # stability_values = getstabilityvalues_allartindexfamily()
+    # stability_values_flag = False # Only run once to save data
+    # if(stability_values_flag):
+    #     with open('stability_values.json', 'w') as f:
+    #         json.dump(stability_values, f)
 
     # Save price_values (GBP) all art index family data
-    price_values = getpricevalues_allartindexfamily()
-    price_values_flag = False # Only run once to save data
-    if(price_values_flag):
-        with open('price_values.json', 'w') as f:
-            json.dump(price_values, f)
+    # price_values = getpricevalues_allartindexfamily()
+    # price_values_flag = False # Only run once to save data
+    # if(price_values_flag):
+    #     with open('price_values.json', 'w') as f:
+    #         json.dump(price_values, f)
 
     # Save stability values all art index data (different from all art index family)
-    stability_values_allartindex = getstabilityvalues_allartindex()
-    stability_values_allartindex_flag = True # Only run once to save data
-    if(stability_values_allartindex_flag):
-        with open('stability_values.json', 'w') as f:
-            json.dump(stability_values_allartindex, f)
+    # stability_values_allartindex = getstabilityvalues_allartindex()
+    # stability_values_allartindex_flag = True # Only run once to save data
+    # if(stability_values_allartindex_flag):
+    #     with open('stability_values.json', 'w') as f:
+    #         json.dump(stability_values_allartindex, f)
 
 
 ### Experimental ###
@@ -156,5 +194,3 @@ if __name__ == "__main__":
 # r = requests.post("https://www.parsehub.com/api/v2/projects/{PROJECT_TOKEN}/run", data=params)
 
 # print(r.text)
-
-
