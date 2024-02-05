@@ -117,13 +117,33 @@ def getChronopulse_values():
 
     return index_values
 
+def getRareWhisky_values():
+    url7 = 'https://app.convertkit.com/forms/3851273/visit'
+    res = r.get(url7)
+    search_cookies = res.cookies
 
+    get_data = {'method':'POST',"host":"https://www.rarewhisky101.com/indices/market-performance-indices/rw-apex-indices","referrer":"https://www.rarewhisky101.com/indices","token":"","user":"6922cdb4-8494-4621-a9fd-ad2540479a0b"}
+
+    header = {'user-agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36 Edg/121.0.0.0'}
+
+    res_get = r.post(url7, data=get_data, cookies=search_cookies, headers=header)
+
+    index_values = res_get.json()
+
+    return index_values
+
+
+   
 ### Execution ###
 if __name__ == "__main__":
 
+    # Save RareWhisky values data
+    RareWhisky_values = getRareWhisky_values()
+    print(RareWhisky_values)
+
     # Save Chronopulse values data
-    Chronopulse_values = getChronopulse_values()
-    print(Chronopulse_values)
+    # Chronopulse_values = getChronopulse_values()
+    # print(Chronopulse_values)
 
     # # Save K500 values data (NOT WORKING)
     # K500_values = getK500_values()
