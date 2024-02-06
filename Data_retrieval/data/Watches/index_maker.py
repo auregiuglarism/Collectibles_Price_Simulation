@@ -107,8 +107,12 @@ def open_files():
 
                 row_count += 1
         # print(f'Processed {row_count} rows for patek philippe 57111A.')
-
-    return prices_data_rolex_116520, prices_data_rolex_116508, prices_data_rolex_116500, prices_data_rolex_126334, prices_data_patek_57111A, date_data_rolex_116520
+                
+    if len(prices_data_patek_57111A) == len(prices_data_rolex_116500) == len(prices_data_rolex_116508) == len(prices_data_rolex_116500) == len(prices_data_rolex_126334):
+        return prices_data_rolex_116520, prices_data_rolex_116508, prices_data_rolex_116500, prices_data_rolex_126334, prices_data_patek_57111A, date_data_rolex_116520
+    else:
+        return "Error: Length of the csv files are not the same"
+    
 
 ## Make index ##
 if __name__ == "__main__":
@@ -132,18 +136,19 @@ if __name__ == "__main__":
     monthly_index = []
     monthly_dates = []
     for value in range(0, len(index_prices), 30):
-        monthly_dates.append(dates[value]) # Take the first date of the month for this month
+        monthly_dates.append(dates[value][4:]) # Take the first date of the month for this month without the day name
         monthly_index.append(sum(index_prices[value:value+30])/30)
     # print(monthly_index)
 
     # Plot the monthly index (Seems to be correct when compared visually to the daily graph)
-    plt.plot(monthly_dates, monthly_index)
+    # plt.plot(monthly_dates, monthly_index)
     # plt.xlabel('Date')
     # plt.ylabel('Index Value (Monthly Average)')
     # plt.title('Custom Weighted Watch Index Monthly Average')
     # plt.show()
 
     # Save the monthly index to a csv file
+    print("Saving the monthly index to a csv file")
     with open('Data_retrieval\data\Watches\Watch_Index.csv', mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['Date', 'Index Value'])
