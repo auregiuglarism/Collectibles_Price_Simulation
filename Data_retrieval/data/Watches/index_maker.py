@@ -1,6 +1,8 @@
 import csv
 import matplotlib.pyplot as plt
 
+# TODO : MAKE SURE TO ITERATE EXACTLY AT THE END OF THE MONTH AND NOT JUST +30 DAYS
+
 # NB make sure the csv files* all have the same length and dates. This is important for the index to be accurate.
 # *: All csv files except Watch_Index.csv 
 
@@ -133,11 +135,12 @@ if __name__ == "__main__":
     # plt.show()
 
     # Now average the index to reflect monthly changes.
+    # TODO HERE
     monthly_index = []
     monthly_dates = []
     for value in range(0, len(index_prices), 30):
-        monthly_dates.append(dates[value][4:]) # Take the first date of the month for this month without the day name
-        monthly_index.append(sum(index_prices[value:value+30])/30)
+        monthly_dates.append(dates[value]) # Take the first date of the month for this month without the day name
+        monthly_index.append(sum(index_prices[value:value+30])/30) 
     # print(monthly_index)
 
     # Plot the monthly index (Seems to be correct when compared visually to the daily graph)
