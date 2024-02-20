@@ -155,19 +155,19 @@ if __name__ == "__main__":
     # print(monthly_index)
 
     # Plot the monthly index (Seems to be correct when compared visually to the daily graph)
-    # plt.plot(monthly_dates, monthly_index)
-    # plt.xlabel('Date')
-    # plt.ylabel('Index Value (Monthly Average)')
-    # plt.title('Custom Weighted Watch Index Monthly Average')
-    # plt.show()
+    plt.plot(monthly_dates, monthly_index)
+    plt.xlabel('Date')
+    plt.ylabel('Index Value (Monthly Average)')
+    plt.title('Custom Weighted Watch Index Monthly Average')
+    plt.show()
 
     # Save the monthly index to a csv file
-    print("Saving the monthly index to a csv file")
-    with open('Data_retrieval\data\Watches\Watch_Index.csv', mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(['Date', 'Index Value'])
-        for i in range(0, len(monthly_dates)):
-            writer.writerow([monthly_dates[i], monthly_index[i]])
+    # print("Saving the monthly index to a csv file")
+    # with open('Data_retrieval\data\Watches\Watch_Index.csv', mode='w', newline='') as file:
+    #     writer = csv.writer(file)
+    #     writer.writerow(['Date', 'Index Value'])
+    #     for i in range(0, len(monthly_dates)):
+    #         writer.writerow([monthly_dates[i], monthly_index[i]])
 
 
     
