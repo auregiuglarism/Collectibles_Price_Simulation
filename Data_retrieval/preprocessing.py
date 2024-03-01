@@ -72,11 +72,14 @@ def convert_to_EUR(df, currency_rates):
     eur_values = []
     eur_dates = []
 
-    for date, value in df.iterrows():
-        year = str(value[0]).split('-')[0]
+    for index, value in df.iterrows():
+        date = str(value[0])
+        year = date.split('-')[0]
         value = value[1]
+        
+        # Take EUR-GBP rate for the current iterating year and divide the value by it
+        eur_val = value/float((currency_rates[currency_rates['Year'] == year]['Rate']))
 
-        eur_val = value/currency_rates[currency_rates['Year'] == year]['Rate']
         eur_values.append(eur_val)
         eur_dates.append(date)
         
@@ -87,8 +90,8 @@ def convert_to_EUR(df, currency_rates):
 
 if __name__ == "__main__":
     # Watch EUR
-    watch_df = get_watch_data('Data_retrieval\data\Watches\Watch_Index.csv')
-    # plt.plot(watch_df['Date'], watch_df['Index Value'])
+    watch_df_EUR = get_watch_data('Data_retrieval\data\Watches\Watch_Index.csv')
+    # plt.plot(watch_df_EUR['Date'], watch_df_EUR['Index Value'])
     # plt.xlabel('Date')
     # plt.ylabel('Index Value (Monthly Average)')
     # plt.title('(Custom Weighted) Watch Index Monthly Average')
@@ -104,23 +107,25 @@ if __name__ == "__main__":
 
     # Art (GBP)
     art_df = get_art_data('Data_retrieval\data\Art\All Art Index Family\index_values.json')
-    # plt.plot(art_df['Date'], art_df['Index Value'])
-    # plt.xlabel('Date')
-    # plt.ylabel('Index Value')
-    # plt.title('All Art Index Family (Monthly Average)')
-    # plt.show()
+    plt.plot(art_df['Date'], art_df['Index Value'])
+    plt.xlabel('Date')
+    plt.ylabel('Index Value')
+    plt.title('All Art Index Family (Monthly Average)')
+    plt.show()
 
     # Get GBP to EUR rates
     GBP_rates = get_GBP_rates_yearly('Data_retrieval\data\GBP_EUR_Historical_Rates.csv')
 
     # Convert to EUR
     wine_df_EUR = convert_to_EUR(wine_df, GBP_rates)
-    print(wine_df_EUR.head(5))
-    plt.plot(wine_df_EUR['Index Value'][0], wine_df_EUR['Index Value'])
-    plt.xlabel('Date')
-    plt.ylabel('Index Value')
-    plt.title('Liv-Ex 100 Index (Monthly Average) EUR')
-    plt.show()
+    # plt.plot(wine_df_EUR['Date'], wine_df_EUR['Index Value'])
+    # plt.xlabel('Date')
+    # plt.ylabel('Index Value')
+    # plt.title('Liv-Ex 100 Index (Monthly Average) EUR')
+    # plt.show()
+
+    # art_df_EUR = convert_to_EUR(art_df, GBP_rates)
+
     
 
     
