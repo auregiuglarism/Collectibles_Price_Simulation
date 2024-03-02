@@ -1,0 +1,5 @@
+plt.plot(watch_df_GBP['Date'], watch_df_GBP['Index Value'])
+    # plt.xlabel('Date')
+    # plt.ylabel('Index Value (Monthly Average)')
+    # plt.title('(Custom Weighted) Watch Index Monthly Average GBP')
+    # plt.show()
