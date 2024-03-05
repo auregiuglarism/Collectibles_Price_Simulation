@@ -60,7 +60,7 @@ def month_numbering(data):
         data['date'] = data['date'].replace(row, current_date)
 
     # Save the updated DataFrame back to a CSV file
-    data.to_csv('Data_retrieval\data\Watches\Rolex Daytona 116500 Price History.csv', index=False) # Change path if needed
+    data.to_csv('data\Watches\Rolex Daytona 116500 Price History.csv', index=False) # Change path if needed
 
 # Reorders the date from 'mm-dd-yyyy' to 'yyyy-mm-dd'
 def date_reordering(data):
@@ -74,17 +74,17 @@ def date_reordering(data):
         data['date'] = data['date'].replace(row, current_date)
 
     # Save the updated DataFrame back to a CSV file
-    data.to_csv('Data_retrieval\data\Watches\Rolex Daytona 116500 Price History.csv', index=False) # Change path if needed
+    data.to_csv('data\Watches\Rolex Daytona 116500 Price History.csv', index=False) # Change path if needed
         
 
 """Filling in Rolex Daytona 116500""" ## DONE
-# data = pd.read_csv('Data_retrieval\data\Watches\Rolex Daytona 116500 Price History.csv')
+# data = pd.read_csv('data\Watches\Rolex Daytona 116500 Price History.csv')
 # month_numbering(data)
-# data = pd.read_csv('Data_retrieval\data\Watches\Rolex Daytona 116500 Price History.csv')
+# data = pd.read_csv('data\Watches\Rolex Daytona 116500 Price History.csv')
 # date_reordering(data)
 
 # # Read the existing CSV file into a pandas DataFrame
-# existing_data = pd.read_csv('Data_retrieval\data\Watches\Rolex Daytona 116500 Price History.csv')
+# existing_data = pd.read_csv('data\Watches\Rolex Daytona 116500 Price History.csv')
 
 # # Create a new DataFrame or series with the missing dates and the desired price
 # desired_price_0 = 11171 # Start price until creation in 2016 for index
@@ -109,16 +109,16 @@ def date_reordering(data):
 # # updated_data.sort_values(by='date', inplace=True)
 
 # # Save the updated DataFrame back to a CSV file
-# updated_data.to_csv('Data_retrieval\data\Watches\Rolex Daytona 116500 Price History.csv', index=False)
+# updated_data.to_csv('data\Watches\Rolex Daytona 116500 Price History.csv', index=False)
 
 """Filling in Patek Philippe 5711/1A""" ## DONE
-# data = pd.read_csv('Data_retrieval\data\Watches\Patek Philippe 5711-1A Price History.csv')
+# data = pd.read_csv('data\Watches\Patek Philippe 5711-1A Price History.csv')
 # month_numbering(data)
-# data = pd.read_csv('Data_retrieval\data\Watches\Patek Philippe 5711-1A Price History.csv')
+# data = pd.read_csv('data\Watches\Patek Philippe 5711-1A Price History.csv')
 # date_reordering(data)
 
 # # Read the existing CSV file into a pandas DataFrame
-# existing_data = pd.read_csv('Data_retrieval\data\Watches\Patek Philippe 5711-1A Price History.csv')
+# existing_data = pd.read_csv('data\Watches\Patek Philippe 5711-1A Price History.csv')
 
 # # Create a new DataFrame or series with the missing dates and the desired price
 # desired_price_0 = 17605 # Start price until creation in 2006 for index
@@ -190,16 +190,16 @@ def date_reordering(data):
 # # updated_data.sort_values(by='date', inplace=True)
 
 # # Save the updated DataFrame back to a CSV file
-# updated_data.to_csv('Data_retrieval\data\Watches\Patek Philippe 5711-1A Price History.csv', index=False)
+# updated_data.to_csv('data\Watches\Patek Philippe 5711-1A Price History.csv', index=False)
 
 """Filling in Rolex Datejust 126334""" ## DONE
-# data = pd.read_csv('Data_retrieval\data\Watches\Rolex DateJust 126334 Price History.csv')
+# data = pd.read_csv('data\Watches\Rolex DateJust 126334 Price History.csv')
 # month_numbering(data)
-# data = pd.read_csv('Data_retrieval\data\Watches\Rolex DateJust 126334 Price History.csv')
+# data = pd.read_csv('data\Watches\Rolex DateJust 126334 Price History.csv')
 # date_reordering(data)
 
 # # Read the existing CSV file into a pandas DataFrame
-# existing_data = pd.read_csv('Data_retrieval\data\Watches\Rolex DateJust 126334 Price History.csv')
+# existing_data = pd.read_csv('data\Watches\Rolex DateJust 126334 Price History.csv')
 
 # # Create a new DataFrame or series with the missing dates and the desired price
 # desired_price_0 = 5586 # Start price until creation in 2017 for index
@@ -220,16 +220,16 @@ def date_reordering(data):
 # # updated_data.sort_values(by='date', inplace=True)
 
 # # Save the updated DataFrame back to a CSV file
-# updated_data.to_csv('Data_retrieval\data\Watches\Rolex DateJust 126334 Price History.csv', index=False)
+# updated_data.to_csv('data\Watches\Rolex DateJust 126334 Price History.csv', index=False)
 
 """Filling in Rolex Daytona 116508""" ## DONE
-# data = pd.read_csv('Data_retrieval\data\Watches\Rolex Daytona 116508 Price History.csv')
+# data = pd.read_csv('data\Watches\Rolex Daytona 116508 Price History.csv')
 # month_numbering(data)
-# data = pd.read_csv('Data_retrieval\data\Watches\Rolex Daytona 116508 Price History.csv')
+# data = pd.read_csv('data\Watches\Rolex Daytona 116508 Price History.csv')
 # date_reordering(data)
 
 # # Read the existing CSV file into a pandas DataFrame
-# existing_data = pd.read_csv('Data_retrieval\data\Watches\Rolex Daytona 116508 Price History.csv')
+# existing_data = pd.read_csv('data\Watches\Rolex Daytona 116508 Price History.csv')
 
 # # Create a new DataFrame or series with the missing dates and the desired price
 
@@ -258,16 +258,16 @@ def date_reordering(data):
 # # Sort the DataFrame by date
 # # updated_data.sort_values(by='date', inplace=True)# Save the updated DataFrame back to a CSV file
 
-# updated_data.to_csv('Data_retrieval\data\Watches\Rolex Daytona 116508 Price History.csv', index=False)
+# updated_data.to_csv('data\Watches\Rolex Daytona 116508 Price History.csv', index=False)
 
 """Filling in Rolex Daytona 116520""" ## DONE 
-# data = pd.read_csv('Data_retrieval\data\Watches\Rolex Daytona 116520 Price History.csv')
+# data = pd.read_csv('data\Watches\Rolex Daytona 116520 Price History.csv')
 # month_numbering(data)
-# data = pd.read_csv('Data_retrieval\data\Watches\Rolex Daytona 116520 Price History.csv')
+# data = pd.read_csv('data\Watches\Rolex Daytona 116520 Price History.csv')
 # date_reordering(data)
 
 # # Read the existing CSV file into a pandas DataFrame
-# existing_data = pd.read_csv('Data_retrieval\data\Watches\Rolex Daytona 116520 Price History.csv')
+# existing_data = pd.read_csv('data\Watches\Rolex Daytona 116520 Price History.csv')
 
 # # Create a new DataFrame or series with the missing dates and the desired price
 # desired_price_1 = 10541 
@@ -371,4 +371,4 @@ def date_reordering(data):
 # # Sort the DataFrame by date
 # # updated_data.sort_values(by='date', inplace=True)# Save the updated DataFrame back to a CSV fil
 
-# updated_data.to_csv('Data_retrieval\data\Watches\Rolex Daytona 116520 Price History.csv', index=False)
+# updated_data.to_csv('data\Watches\Rolex Daytona 116520 Price History.csv', index=False)

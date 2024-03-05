@@ -14,7 +14,7 @@ w5_116520 = 0.16
 # Open all the files
 def open_files():
     # Rolex Daytona 116520 Price History
-    with open('Data_retrieval\data\Watches\Rolex Daytona 116520 Price History.csv') as csv_file:
+    with open('data\Watches\Rolex Daytona 116520 Price History.csv') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
 
         prices_data_rolex_116520 = []
@@ -33,7 +33,7 @@ def open_files():
         # print(f'Processed {row_count} rows for rolex daytona 116520.')
 
     # Rolex Daytona 116508 Price History
-    with open('Data_retrieval\data\Watches\Rolex Daytona 116508 Price History.csv') as csv_file:
+    with open('data\Watches\Rolex Daytona 116508 Price History.csv') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
 
         prices_data_rolex_116508 = []
@@ -52,7 +52,7 @@ def open_files():
         # print(f'Processed {row_count} rows for rolex daytona 116508.')
 
     # Rolex Daytona 116500 Price History
-    with open('Data_retrieval\data\Watches\Rolex Daytona 116500 Price History.csv') as csv_file:
+    with open('data\Watches\Rolex Daytona 116500 Price History.csv') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
 
         prices_data_rolex_116500 = []
@@ -71,7 +71,7 @@ def open_files():
         # print(f'Processed {row_count} rows for rolex daytona 116500.')
 
     # Rolex Datejust 126334 Price History
-    with open('Data_retrieval\data\Watches\Rolex DateJust 126334 Price History.csv') as csv_file:
+    with open('data\Watches\Rolex DateJust 126334 Price History.csv') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
 
         prices_data_rolex_126334 = []
@@ -90,7 +90,7 @@ def open_files():
         # print(f'Processed {row_count} rows for rolex datejust 126334.')
 
     # Patek Philippe 5711/1A Price History
-    with open('Data_retrieval\data\Watches\Rolex DateJust 126334 Price History.csv') as csv_file:
+    with open('data\Watches\Rolex DateJust 126334 Price History.csv') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
 
         prices_data_patek_57111A = []
@@ -163,7 +163,7 @@ if __name__ == "__main__":
 
     # Save the monthly index to a csv file
     # print("Saving the monthly index to a csv file")
-    # with open('Data_retrieval\data\Watches\Watch_Index.csv', mode='w', newline='') as file:
+    # with open('data\Watches\Watch_Index.csv', mode='w', newline='') as file:
     #     writer = csv.writer(file)
     #     writer.writerow(['Date', 'Index Value'])
     #     for i in range(0, len(monthly_dates)):
