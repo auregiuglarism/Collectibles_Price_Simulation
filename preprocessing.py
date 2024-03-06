@@ -42,7 +42,61 @@ def get_art_data(path): # pd.read_json not working due to complex json file
         return df.drop(columns=['Drop this column'])
     
 # Open GBP and convert to yearly rates   
-def get_GBP_rates_yearly(path):
+def get_EURGBP_rates_yearly(path):
+    df = pd.read_csv(path)
+
+    year_list = []
+    rate_list = []
+    
+    temp_year = []
+    temp_year_values = []
+
+    df.set_index('Date', inplace=True) # set date as index
+
+    for date, value in df.iterrows():
+        year = date.split('-')[0]
+        if (year not in temp_year) and (temp_year != []):
+                rate_list.append(sum(temp_year_values)/len(temp_year_values)) # Average rate for the year
+                year_list.append(temp_year[0])
+
+                temp_year = []
+                temp_year_values = []
+
+        temp_year.append(year)
+        temp_year_values.append(value)
+
+    yearly_average_df = pd.DataFrame({'Year': year_list, 'Rate': rate_list})
+    return yearly_average_df
+
+# Open EUR USD and convert to yearly rates
+def get_EURUSD_rates_yearly(path):
+    df = pd.read_csv(path)
+
+    year_list = []
+    rate_list = []
+    
+    temp_year = []
+    temp_year_values = []
+
+    df.set_index('Date', inplace=True) # set date as index
+
+    for date, value in df.iterrows():
+        year = date.split('-')[0]
+        if (year not in temp_year) and (temp_year != []):
+                rate_list.append(sum(temp_year_values)/len(temp_year_values)) # Average rate for the year
+                year_list.append(temp_year[0])
+
+                temp_year = []
+                temp_year_values = []
+
+        temp_year.append(year)
+        temp_year_values.append(value)
+
+    yearly_average_df = pd.DataFrame({'Year': year_list, 'Rate': rate_list})
+    return yearly_average_df
+
+# Open GBP USD and convert to yearly rates
+def get_GBPUSD_rates_yearly(path):
     df = pd.read_csv(path)
 
     year_list = []
@@ -95,6 +149,32 @@ def convert_to_GBP(df, currency_rates):
         
     df_gbp = pd.DataFrame({'Date': gbp_dates, 'Index Value': gbp_values})
     return df_gbp
+
+def convert_to_USD(df, currency_rates):
+    usd_values = []
+    usd_dates = []
+
+    for index, value in df.iterrows():
+        date = str(value.iloc[0])
+        year = date.split('-')[0]
+        value = value.iloc[1]
+
+        # Take current GPB-EUR rate
+        rate_index = 0
+        for i, rate in currency_rates.iterrows():
+            if rate.iloc[0] == year:
+                rate_index = i
+                break   
+        rate = currency_rates.iloc[rate_index, 1]
+
+        # Take EUR-GBP rate for the current iterating year and multiply the value by it
+        usd_val = value * rate
+
+        usd_values.append(usd_val)
+        usd_dates.append(date)
+        
+    df_usd = pd.DataFrame({'Date': usd_dates, 'Index Value': usd_values})
+    return df_usd
 
 ##### CORRELATED VARIABLES #####
 
@@ -176,11 +256,27 @@ def get_US10_year_bond_yield(path):
 ##### MAIN #####
 
 # Get GBP to EUR rates
-GBP_rates = get_GBP_rates_yearly('data\GBP_EUR_Historical_Rates.csv')
+GBP_rates = get_EURGBP_rates_yearly('data\GBP_EUR_Historical_Rates.csv')
 # plt.plot(GBP_rates['Year'], GBP_rates['Rate'])
 # plt.xlabel('Year')
 # plt.ylabel('Rate')
-# plt.title('GBP to EUR (Yearly Average)')
+# plt.title('EUR to GBP (Yearly Average)')
+# plt.show()
+
+# Get EUR to USD rates
+USD_rates = get_EURUSD_rates_yearly('data\EUR_USD_Historical_Rates.csv')
+# plt.plot(USD_rates['Year'], USD_rates['Rate'])
+# plt.xlabel('Year')
+# plt.ylabel('Rate')
+# plt.title('EUR to USD (Yearly Average)')
+# plt.show()
+
+# Get GBP to USD rates
+USD2_rates = get_GBPUSD_rates_yearly('data\GBP_USD_Historical_Rates.csv')
+# plt.plot(USD2_rates['Year'], USD2_rates['Rate'])
+# plt.xlabel('Year')
+# plt.ylabel('Rate')
+# plt.title('GBP to USD (Yearly Average)')
 # plt.show()
 
 # Watch EUR
@@ -191,28 +287,44 @@ watch_df_EUR = get_watch_data('data\Watches\Watch_Index.csv')
 # plt.title('(Custom Weighted) Watch Index Monthly Average EUR')
 # plt.show()
 
-# EUR was created in 1999, so we need to convert to GBP
-watch_df = convert_to_GBP(watch_df_EUR, GBP_rates)
+# EUR was created in 1999, so we need to convert to USD
+watch_df = convert_to_USD(watch_df_EUR, USD_rates)
 # plt.plot(watch_df['Date'], watch_df['Index Value'])
 # plt.xlabel('Date')
 # plt.ylabel('Index Value (Monthly Average)')
-# plt.title('(Custom Weighted) Watch Index Monthly Average GBP')
+# plt.title('(Custom Weighted) Watch Index Monthly Average USD')
 # plt.show()
 
 # Wine GBP
-wine_df = get_wine_data('data\Wine\Liv-Ex 100 Index.csv')
-# plt.plot(wine_df['Date'], wine_df['Index Value'])
+wine_df_GBP = get_wine_data('data\Wine\Liv-Ex 100 Index.csv')
+# plt.plot(wine_df_GBP['Date'], wine_df_GBP['Index Value'])
 # plt.xlabel('Date')
 # plt.ylabel('Index Value')
 # plt.title('Liv-Ex 100 Index (Monthly Average)')
 # plt.show()
 
-# Art (GBP)
-art_df = get_art_data('data\Art\All Art Index Family\index_values.json')
-# plt.plot(art_df['Date'], art_df['Index Value'])
+# Wine needs to be converted to USD
+wine_df = convert_to_USD(wine_df_GBP, USD2_rates)
+# plt.plot(wine_df['Date'], wine_df['Index Value'])
+# plt.xlabel('Date')
+# plt.ylabel('Index Value')
+# plt.title('Liv-Ex 100 Index (Monthly Average) USD')
+# plt.show()
+
+# Art GBP
+art_df_GBP = get_art_data('data\Art\All Art Index Family\index_values.json')
+# plt.plot(art_df_GBP['Date'], art_df_GBP['Index Value'])
 # plt.xlabel('Date')
 # plt.ylabel('Index Value')
 # plt.title('All Art Index Family (Monthly Average)')
+# plt.show()
+
+# Art needs to be converted to USD
+art_df = convert_to_USD(art_df_GBP, USD2_rates)
+# plt.plot(art_df['Date'], art_df['Index Value'])
+# plt.xlabel('Date')
+# plt.ylabel('Index Value')
+# plt.title('All Art Index Family (Monthly Average) USD')
 # plt.show()
 
 # CPI Index United States (USD)
