@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import json
 import math
 
-# TODO: Might need to convert all index data to USD
-# TODO: check that you have a more recent version of S&P 500, backup only goes to 2018 but starts at 1871.
+# TODO : Log transform the data and the correlated variables
+# TODO : Might need to adjust data from inflation, especially correlated variables
 
 ##### INDEX DATA #####
 
@@ -244,9 +244,9 @@ def get_monthly_gold_prices(path):
     df_average = pd.DataFrame({'Date': date, 'Gold Price (monthly)': average_monthly_prices})
     return df_average
 
+
 def get_sp500(path):
     df = pd.read_csv(path)
-    df = df.drop(columns=['Consumer_Price_Index'])
     return df
 
 def get_US10_year_bond_yield(path):
@@ -351,19 +351,18 @@ gold_df = get_monthly_gold_prices(r'data\Correlated Variables\Gold Prices\data.c
 # plt.title('Gold Prices (Monthly Average)')
 # plt.show()
 
-# SP500 (USD)
-# Three most important columns: Date, SP500, PE_10_Ratio
+# SP500 (USD) 
 sp500_df = get_sp500(r'data\Correlated Variables\S&P 500\data.csv')
-# plt.plot(sp500_df['Date'], sp500_df['SP_500'])
+# plt.plot(sp500_df['Date'], sp500_df['Real'])
 # plt.xlabel('Date')
-# plt.ylabel('S&P 500 Index Value')
-# plt.title('S&P 500 Monthly (USD)')
+# plt.ylabel('S&P 500 Index Value (REAL)')
+# plt.title('S&P 500 Monthly (USD) Inflation Adjusted')
 # plt.show()
-# Now plot PE_10_Ratio
-# plt.plot(sp500_df['Date'], sp500_df['PE_10_Ratio'])
+# Now plot SP500 nominal (not inflation adjusted)
+# plt.plot(sp500_df['Date'], sp500_df['Nominal'])
 # plt.xlabel('Date')
-# plt.ylabel('S&P 500 PE 10 Ratio')
-# plt.title('S&P 500 PE 10 Ratio Monthly (USD)')
+# plt.ylabel('S&P 500 Index Value (NOMINAL)')
+# plt.title('S&P 500 Monthly (USD) NOT Inflation Adjusted')
 # plt.show()
 
 # United States 10-Year Bond Yield (USD) in %
