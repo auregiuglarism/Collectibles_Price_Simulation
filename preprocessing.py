@@ -6,6 +6,7 @@ import math
 
 # TODO : Log transform the data and the correlated variables
 # TODO : Might need to adjust data from inflation, especially correlated variables
+# TODO : Might need to add more CPI data to cover 2020-2021-2022-2023 and 2024 manually in the CSV in monthly time frames
 
 ##### INDEX DATA #####
 
@@ -23,6 +24,7 @@ def get_wine_data(path):
 
 # Open art data
 # Index Methodology : https://www.artmarketresearch.com/all-art-methodology/
+# The art index is already inflation-adjusted
 def get_art_data(path): # pd.read_json not working due to complex json file
     with open(path, 'r') as f:
         data = json.load(f)
@@ -253,7 +255,39 @@ def get_US10_year_bond_yield(path):
     df = pd.read_csv(path)
     return df
 
+##### ADJUST FOR INFLATION #####
+
+def adjust_inflation(df, cpi_df):
+    # Average CPI to Yearly rates instead of monthly rates
+    year_list = []
+    rate_list = []
+    
+    temp_year = []
+    temp_year_values = []
+
+    cpi_df.set_index('Date', inplace=True) # set date as index
+
+    for date, value in cpi_df.iterrows():
+        year = date.split('-')[0]
+        if (year not in temp_year) and (temp_year != []):
+                rate_list.append(sum(temp_year_values)/len(temp_year_values)) # Average rate for the year
+                year_list.append(temp_year[0])
+
+                temp_year = []
+                temp_year_values = []
+
+        temp_year.append(year)
+        temp_year_values.append(value)
+
+    yearly_average_df = pd.DataFrame({'Year': year_list, 'CPI_Price_Index': rate_list})
+
+    # Now adjust the data for inflation
+    
+    return 0
+
 ##### MAIN #####
+
+# Retrieve all data and convert them to monthly time frames under the same currency (USD)
 
 # Get GBP to EUR rates
 GBP_rates = get_EURGBP_rates_yearly('data\GBP_EUR_Historical_Rates.csv')
@@ -287,7 +321,7 @@ watch_df_EUR = get_watch_data('data\Watches\Watch_Index.csv')
 # plt.title('(Custom Weighted) Watch Index Monthly Average EUR')
 # plt.show()
 
-# EUR was created in 1999, so we need to convert to USD
+# EUR was created in 1999, so we need to convert to USD (Not inflation adjusted)
 watch_df = convert_to_USD(watch_df_EUR, USD_rates)
 # plt.plot(watch_df['Date'], watch_df['Index Value'])
 # plt.xlabel('Date')
@@ -303,7 +337,7 @@ wine_df_GBP = get_wine_data('data\Wine\Liv-Ex 100 Index.csv')
 # plt.title('Liv-Ex 100 Index (Monthly Average)')
 # plt.show()
 
-# Wine needs to be converted to USD
+# Wine needs to be converted to USD (Not inflation adjusted)
 wine_df = convert_to_USD(wine_df_GBP, USD2_rates)
 # plt.plot(wine_df['Date'], wine_df['Index Value'])
 # plt.xlabel('Date')
@@ -311,7 +345,7 @@ wine_df = convert_to_USD(wine_df_GBP, USD2_rates)
 # plt.title('Liv-Ex 100 Index (Monthly Average) USD')
 # plt.show()
 
-# Art GBP
+# Art GBP (already inflation adjusted)
 art_df_GBP = get_art_data('data\Art\All Art Index Family\index_values.json')
 # plt.plot(art_df_GBP['Date'], art_df_GBP['Index Value'])
 # plt.xlabel('Date')
@@ -372,5 +406,9 @@ bond_yield_df = get_US10_year_bond_yield(r'data\Correlated Variables\United Stat
 # plt.ylabel('10 Year Bond Yield (%)')
 # plt.title('United States 10-Year Bond Yield (Monthly) USD (%)')
 # plt.show()
+
+# Now adjust all the data for inflation
+# NB : Art index is already adjusted for inflation
+cpi_df = adjust_inflation(cpi_df)
 
 
