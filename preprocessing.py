@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import json
 import math
 
-# TODO : Log transform the data and the correlated variables
-# TODO : Might need to adjust data from inflation, especially correlated variables
+# TODO : Log transform the data and the (some) correlated variables
+# TODO : Research wether you need to adjust for inflation correlated variables or not and if so, then do it.
 
 ##### INDEX DATA #####
 
@@ -237,6 +237,11 @@ def get_monthly_gold_prices(path):
 
             temp_month = []
             temp_month_values = []
+
+        if df['Price'].iloc[-1] == price: # last month check
+            agp = (sum(temp_month_values)/len(temp_month_values))
+            date.append(previous_date)
+            average_monthly_prices.append(agp)
         
         temp_month.append(current_month)
         temp_month_values.append(price)
@@ -255,8 +260,7 @@ def get_US10_year_bond_yield(path):
 
 ##### ADJUST FOR INFLATION #####
 
-def adjust_inflation(df, cpi_df):
-    # Average CPI to Yearly rates instead of monthly rates
+def get_cpi_yearly_rates(cpi_df): # Get yearly average rates
     year_list = []
     rate_list = []
     
@@ -274,18 +278,48 @@ def adjust_inflation(df, cpi_df):
                 temp_year = []
                 temp_year_values = []
 
+        if float(cpi_df['CPI_Index'].iloc[-1]) == float(value.iloc[0]): # last year check
+            rate_list.append(sum(temp_year_values)/len(temp_year_values))
+            year_list.append(year)
+
         temp_year.append(year)
         temp_year_values.append(value)
 
     yearly_average_df = pd.DataFrame({'Year': year_list, 'CPI_Index': rate_list})
 
-    # Now adjust the data for inflation
+    return yearly_average_df
+
+def adjust_inflation(df, cpi_df):
+    adjusted_values = []
+    dates = []
+
+    latest_inflation_rate = cpi_df['CPI_Index'].iloc[-1] # Take the last value of the CPI index
+
+    for index, value in df.iterrows():
+        date = str(value.iloc[0])
+        year = date.split('-')[0]
+        val = value.iloc[1]
+
+        # Take the inflation rate for the current year
+        rate_index = 0
+        for i, rate in cpi_df.iterrows():
+            if rate.iloc[0] == year:
+                rate_index = i
+                break   
+        inflation_rate = cpi_df.iloc[rate_index, 1]
+
+        # Adjust the value for inflation
+        adjusted_val = (float(val.iloc[0]) * float(latest_inflation_rate.iloc[0])) / float(inflation_rate.iloc[0])
+        adjusted_values.append(adjusted_val)
+        dates.append(date)
     
-    return 0
+    df_adjusted = pd.DataFrame({'Date': dates, 'Index Value': adjusted_values})
+    
+    return df_adjusted
 
 ##### MAIN #####
 
-# Retrieve all data and convert them to monthly time frames under the same currency (USD)
+## Retrieve all data and convert them to monthly time frames under the same currency (USD) ##
 
 # Get GBP to EUR rates
 GBP_rates = get_EURGBP_rates_yearly('data\GBP_EUR_Historical_Rates.csv')
@@ -405,8 +439,16 @@ bond_yield_df = get_US10_year_bond_yield(r'data\Correlated Variables\United Stat
 # plt.title('United States 10-Year Bond Yield (Monthly) USD (%)')
 # plt.show()
 
-# Now adjust all the data for inflation
-# NB : Art index is already adjusted for inflation
-# cpi_df = adjust_inflation(cpi_df)
+## Now adjust all the data for inflation ##
+
+# NB : Art index is already adjusted for inflation in its original data
+yearly_cpi_df = get_cpi_yearly_rates(cpi_df)
+wine_df = adjust_inflation(wine_df, yearly_cpi_df)
+watch_df = adjust_inflation(watch_df, yearly_cpi_df)
+
+
+
+
+
 
 
