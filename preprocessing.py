@@ -6,7 +6,6 @@ import math
 
 # TODO : Log transform the data and the correlated variables
 # TODO : Might need to adjust data from inflation, especially correlated variables
-# TODO : Might need to add more CPI data to cover 2020-2021-2022-2023 and 2024 manually in the CSV in monthly time frames
 
 ##### INDEX DATA #####
 
@@ -182,7 +181,7 @@ def convert_to_USD(df, currency_rates):
 
 def get_CPI_Index(path):
     df = pd.read_csv(path)
-    return df.drop(columns=['Price_Inflation'])
+    return df
 
 def get_monthly_global_crypto_market_cap(path):
     df = pd.read_csv(path)
@@ -246,7 +245,6 @@ def get_monthly_gold_prices(path):
     df_average = pd.DataFrame({'Date': date, 'Gold Price (monthly)': average_monthly_prices})
     return df_average
 
-
 def get_sp500(path):
     df = pd.read_csv(path)
     return df
@@ -279,7 +277,7 @@ def adjust_inflation(df, cpi_df):
         temp_year.append(year)
         temp_year_values.append(value)
 
-    yearly_average_df = pd.DataFrame({'Year': year_list, 'CPI_Price_Index': rate_list})
+    yearly_average_df = pd.DataFrame({'Year': year_list, 'CPI_Index': rate_list})
 
     # Now adjust the data for inflation
     
@@ -361,9 +359,9 @@ art_df = convert_to_USD(art_df_GBP, USD2_rates)
 # plt.title('All Art Index Family (Monthly Average) USD')
 # plt.show()
 
-# CPI Index United States (USD)
-cpi_df = get_CPI_Index(r'data\Correlated Variables\CPI Index\United States\data.csv')
-# plt.plot(cpi_df['Date'], cpi_df['CPI_Price_Index'])
+# CPI Index United States (USD) # Seasonally adjusted
+cpi_df = get_CPI_Index(r'data\Correlated Variables\CPI Index\United States\CPI Data all items United States.csv')
+# plt.plot(cpi_df['Date'], cpi_df['CPI_Index'])
 # plt.xlabel('Date')
 # plt.ylabel('Index Value')
 # plt.title('Monthly CPI_Index (Inflation) United States')
@@ -409,6 +407,6 @@ bond_yield_df = get_US10_year_bond_yield(r'data\Correlated Variables\United Stat
 
 # Now adjust all the data for inflation
 # NB : Art index is already adjusted for inflation
-cpi_df = adjust_inflation(cpi_df)
+# cpi_df = adjust_inflation(cpi_df)
 
 
