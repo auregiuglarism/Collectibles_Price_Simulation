@@ -324,14 +324,20 @@ def adjust_inflation(df, cpi_df): # Adjust inflation for data and nearly all cor
 def calculate_inflation_percent_yearly(cpi_df): # Compute inflation percent change yearly
     rates = []
     dates = []
-    latest_inflation_rate = cpi_df['CPI_Index'].iloc[-1]
+    count = 0
 
     for idx, rate in cpi_df.iterrows():
-        prev = float(rate.iloc[1])
+        latest_inflation_rate = float(rate.iloc[1])
 
-        inflation = ((latest_inflation_rate.iloc[0] - prev)/prev) * 100
+        if count == cpi_df.shape[0] - 1:
+            prev = float(cpi_df.iloc[-1, 1])
+        else:
+            prev = float(cpi_df.iloc[count, 1])
+
+        inflation = ((latest_inflation_rate - prev)/prev) * 100
+        count = count + 1
+
         rates.append(inflation)
-
         dates.append(rate.iloc[0])
 
     df_inflation = pd.DataFrame({'Date': dates, 'Inflation Rate': rates})
@@ -339,7 +345,29 @@ def calculate_inflation_percent_yearly(cpi_df): # Compute inflation percent chan
     return df_inflation
 
 def adjust_bond_yield_inflation(bond_yield_df, inflation_yearly_df):
-    pass
+    adjusted_yield = []
+    dates = []
+
+    for index, value in bond_yield_df.iterrows():
+        date = str(value.iloc[0])
+        year = date.split('-')[0]
+        bond = value.iloc[1]
+
+        # Take the inflation rate for the current year
+        rate_index = 0
+        for i, rate in inflation_yearly_df.iterrows():
+            if rate.iloc[0] == year:
+                rate_index = i
+                break   
+        inflation_rate = inflation_yearly_df.iloc[rate_index, 1]
+
+        # Adjust the value for inflation
+        adjusted_val = bond - inflation_rate
+        adjusted_yield.append(adjusted_val)
+        dates.append(date)
+
+    bond_yield_df_adjusted = pd.DataFrame({'Date': dates, 'Rate_in_Percent': adjusted_yield})
+    return bond_yield_df_adjusted
 
 ##### MAIN #####
 
@@ -478,6 +506,9 @@ gold_df = adjust_inflation(gold_df, yearly_cpi_df)
 
 # Adjust inflation on the ten year bond yield
 df_inflation_percent = calculate_inflation_percent_yearly(yearly_cpi_df)
+print(df_inflation_percent.head(5))
+print(df_inflation_percent.tail(5))
+bond_yield_df = adjust_bond_yield_inflation(bond_yield_df, df_inflation_percent)
 
 
 
