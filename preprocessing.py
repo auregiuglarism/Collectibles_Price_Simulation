@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import json
 import math
 
-# TODO : Log transform the data and the (some) correlated variables
+# TODO : Log transform the data and the (some)  correlated variables
 # TODO : Research wether you need to adjust for inflation correlated variables or not and if so, then do it.
 
 ##### INDEX DATA #####
@@ -289,7 +289,7 @@ def get_cpi_yearly_rates(cpi_df): # Get yearly average rates
 
     return yearly_average_df
 
-def adjust_inflation(df, cpi_df):
+def adjust_inflation(df, cpi_df): # Adjust inflation for data and nearly all correlated variables
     adjusted_values = []
     dates = []
 
@@ -309,13 +309,37 @@ def adjust_inflation(df, cpi_df):
         inflation_rate = cpi_df.iloc[rate_index, 1]
 
         # Adjust the value for inflation
-        adjusted_val = (float(val.iloc[0]) * float(latest_inflation_rate.iloc[0])) / float(inflation_rate.iloc[0])
+        if type(val) == float: # Works for the correlated variables
+            adjusted_val = (val * float(latest_inflation_rate.iloc[0])) / float(inflation_rate.iloc[0])
+
+        else: # Works for the data indexes
+            adjusted_val = (float(val.iloc[0]) * float(latest_inflation_rate.iloc[0])) / float(inflation_rate.iloc[0])
         adjusted_values.append(adjusted_val)
         dates.append(date)
     
     df_adjusted = pd.DataFrame({'Date': dates, 'Index Value': adjusted_values})
     
     return df_adjusted
+
+def calculate_inflation_percent_yearly(cpi_df): # Compute inflation percent change yearly
+    rates = []
+    dates = []
+    latest_inflation_rate = cpi_df['CPI_Index'].iloc[-1]
+
+    for idx, rate in cpi_df.iterrows():
+        prev = float(rate.iloc[1])
+
+        inflation = ((latest_inflation_rate.iloc[0] - prev)/prev) * 100
+        rates.append(inflation)
+
+        dates.append(rate.iloc[0])
+
+    df_inflation = pd.DataFrame({'Date': dates, 'Inflation Rate': rates})
+    
+    return df_inflation
+
+def adjust_bond_yield_inflation(bond_yield_df, inflation_yearly_df):
+    pass
 
 ##### MAIN #####
 
@@ -445,6 +469,17 @@ bond_yield_df = get_US10_year_bond_yield(r'data\Correlated Variables\United Stat
 yearly_cpi_df = get_cpi_yearly_rates(cpi_df)
 wine_df = adjust_inflation(wine_df, yearly_cpi_df)
 watch_df = adjust_inflation(watch_df, yearly_cpi_df)
+
+# Adjust the correlated variable's inflation:
+# CPI Index is inflatioj itself no need to adjust
+# SP500 is already adjusted for inflation (Real column)
+crypto_df = adjust_inflation(crypto_df, yearly_cpi_df)
+gold_df = adjust_inflation(gold_df, yearly_cpi_df)
+
+# Adjust inflation on the ten year bond yield
+df_inflation_percent = calculate_inflation_percent_yearly(yearly_cpi_df)
+
+
 
 
 
