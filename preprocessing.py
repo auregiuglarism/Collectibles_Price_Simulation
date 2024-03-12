@@ -5,7 +5,6 @@ import json
 import math
 
 # TODO : Log transform the data and the (some)  correlated variables
-# TODO : Research wether you need to adjust for inflation correlated variables or not and if so, then do it.
 
 ##### INDEX DATA #####
 
@@ -329,10 +328,14 @@ def calculate_inflation_percent_yearly(cpi_df): # Compute inflation percent chan
     for idx, rate in cpi_df.iterrows():
         latest_inflation_rate = float(rate.iloc[1])
 
-        if count == cpi_df.shape[0] - 1:
+        if count == cpi_df.shape[0]: # Prevent out of bounds
             prev = float(cpi_df.iloc[-1, 1])
+        
+        elif count == 0: # 0 % Inflation for the first year since we don't have the previous year
+            prev = float(cpi_df.iloc[0, 1])
+        
         else:
-            prev = float(cpi_df.iloc[count, 1])
+            prev = float(cpi_df.iloc[count-1, 1])
 
         inflation = ((latest_inflation_rate - prev)/prev) * 100
         count = count + 1
@@ -484,7 +487,7 @@ sp500_df = get_sp500(r'data\Correlated Variables\S&P 500\data.csv')
 # plt.show()
 
 # United States 10-Year Bond Yield (USD) in %
-bond_yield_df = get_US10_year_bond_yield(r'data\Correlated Variables\United States 10 Years Government Bond Yield\data.csv')
+bond_yield_df = get_US10_year_bond_yield(r'data\Correlated Variables\United States 10 Years Government Bond Yield\data_modified.csv')
 # plt.plot(bond_yield_df['Date'], bond_yield_df['Rate_in_Percent'])
 # plt.xlabel('Date')
 # plt.ylabel('10 Year Bond Yield (%)')
@@ -495,6 +498,7 @@ bond_yield_df = get_US10_year_bond_yield(r'data\Correlated Variables\United Stat
 
 # NB : Art index is already adjusted for inflation in its original data
 yearly_cpi_df = get_cpi_yearly_rates(cpi_df)
+
 wine_df = adjust_inflation(wine_df, yearly_cpi_df)
 watch_df = adjust_inflation(watch_df, yearly_cpi_df)
 
@@ -506,9 +510,11 @@ gold_df = adjust_inflation(gold_df, yearly_cpi_df)
 
 # Adjust inflation on the ten year bond yield
 df_inflation_percent = calculate_inflation_percent_yearly(yearly_cpi_df)
-print(df_inflation_percent.head(5))
-print(df_inflation_percent.tail(5))
 bond_yield_df = adjust_bond_yield_inflation(bond_yield_df, df_inflation_percent)
+
+
+ 
+
 
 
 
