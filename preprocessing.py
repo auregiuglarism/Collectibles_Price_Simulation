@@ -1,10 +1,11 @@
 import csv
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import json
 import math
 
-# TODO : Log transform the data and the (some)  correlated variables
+# TODO : Motivate in report why you adjusted the inflation on your data
 
 ##### INDEX DATA #####
 
@@ -266,9 +267,8 @@ def get_cpi_yearly_rates(cpi_df): # Get yearly average rates
     temp_year = []
     temp_year_values = []
 
-    cpi_df.set_index('Date', inplace=True) # set date as index
-
-    for date, value in cpi_df.iterrows():
+    for index, value in cpi_df.iterrows():
+        date = str(value.iloc[0])
         year = date.split('-')[0]
         if (year not in temp_year) and (temp_year != []):
                 rate_list.append(sum(temp_year_values)/len(temp_year_values)) # Average rate for the year
@@ -277,12 +277,12 @@ def get_cpi_yearly_rates(cpi_df): # Get yearly average rates
                 temp_year = []
                 temp_year_values = []
 
-        if float(cpi_df['CPI_Index'].iloc[-1]) == float(value.iloc[0]): # last year check
+        if float(cpi_df['CPI_Index'].iloc[-1]) == float(value.iloc[1]): # last year check
             rate_list.append(sum(temp_year_values)/len(temp_year_values))
             year_list.append(year)
 
         temp_year.append(year)
-        temp_year_values.append(value)
+        temp_year_values.append(value.iloc[1])
 
     yearly_average_df = pd.DataFrame({'Year': year_list, 'CPI_Index': rate_list})
 
@@ -308,11 +308,8 @@ def adjust_inflation(df, cpi_df): # Adjust inflation for data and nearly all cor
         inflation_rate = cpi_df.iloc[rate_index, 1]
 
         # Adjust the value for inflation
-        if type(val) == float: # Works for the correlated variables
-            adjusted_val = (val * float(latest_inflation_rate.iloc[0])) / float(inflation_rate.iloc[0])
+        adjusted_val = (val * float(latest_inflation_rate)) / float(inflation_rate)
 
-        else: # Works for the data indexes
-            adjusted_val = (float(val.iloc[0]) * float(latest_inflation_rate.iloc[0])) / float(inflation_rate.iloc[0])
         adjusted_values.append(adjusted_val)
         dates.append(date)
     
@@ -371,6 +368,21 @@ def adjust_bond_yield_inflation(bond_yield_df, inflation_yearly_df):
 
     bond_yield_df_adjusted = pd.DataFrame({'Date': dates, 'Rate_in_Percent': adjusted_yield})
     return bond_yield_df_adjusted
+
+##### LOG TRANSFORM #####
+
+def log_transform(df): # Assuming Index Value only contains positive values > 0
+    df['Index Value'] = df['Index Value'].apply(lambda x: math.log(x))
+    return df
+
+def log_transform_sp500(sp_500):
+    sp_500['Real'] = sp_500['Real'].apply(lambda x: math.log(x)) # Most important as its the inflation adjusted values
+    sp_500['Nominal'] = sp_500['Nominal'].apply(lambda x: math.log(x)) # Not inflation adjusted
+    return sp_500
+
+def log_transform_cpi(cpi_df):
+    cpi_df['CPI_Index'] = cpi_df['CPI_Index'].apply(lambda x: math.log(x))
+    return cpi_df
 
 ##### MAIN #####
 
@@ -498,12 +510,11 @@ bond_yield_df = get_US10_year_bond_yield(r'data\Correlated Variables\United Stat
 
 # NB : Art index is already adjusted for inflation in its original data
 yearly_cpi_df = get_cpi_yearly_rates(cpi_df)
-
 wine_df = adjust_inflation(wine_df, yearly_cpi_df)
 watch_df = adjust_inflation(watch_df, yearly_cpi_df)
 
 # Adjust the correlated variable's inflation:
-# CPI Index is inflatioj itself no need to adjust
+# CPI Index is inflation itself no need to adjust
 # SP500 is already adjusted for inflation (Real column)
 crypto_df = adjust_inflation(crypto_df, yearly_cpi_df)
 gold_df = adjust_inflation(gold_df, yearly_cpi_df)
@@ -512,6 +523,21 @@ gold_df = adjust_inflation(gold_df, yearly_cpi_df)
 df_inflation_percent = calculate_inflation_percent_yearly(yearly_cpi_df)
 bond_yield_df = adjust_bond_yield_inflation(bond_yield_df, df_inflation_percent)
 
+## Log transform the data ##
+
+# Asset Class Data
+wine_df = log_transform(wine_df)
+watch_df = log_transform(watch_df)
+art_df = log_transform(art_df)
+
+# Correlated Variables
+crypto_df = log_transform(crypto_df)
+gold_df = log_transform(gold_df)
+sp500_df = log_transform_sp500(sp500_df)
+cpi_df = log_transform_cpi(cpi_df) 
+# NB : Bond yield is already in percent (Ratio) so no need to log transform
+
+## Ready for analysis ##
 
  
 
