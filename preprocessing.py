@@ -5,8 +5,6 @@ import matplotlib.pyplot as plt
 import json
 import math
 
-# TODO : Motivate in report why you adjusted the inflation on your data
-
 ##### INDEX DATA #####
 
 # Open watch data (done with pd.dataframe but you can also do it with arrays)
