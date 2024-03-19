@@ -4,6 +4,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 import math
+from statsmodels.tsa.seasonal import seasonal_decompose
+from statsmodels.tsa.stattools import kpss
+
+import warnings
+# warnings.filterwarnings("ignore") # Uncomment to clean terminal output from all warnings
+
+# TODO : Evaluate whether the should be decomposed multiplicatively or additively + FIND PAPER TO SUPPORT
+# TODO : Evaluate the stationarity of the data using correlogram
+# TODO : Find paper to support the use of the KPSS test for stationarity
+# TODO : REDO the plots for the data in all preprocessing steps to correct the x-axis labels
 
 ##### INDEX DATA #####
 
@@ -367,20 +377,49 @@ def adjust_bond_yield_inflation(bond_yield_df, inflation_yearly_df):
     bond_yield_df_adjusted = pd.DataFrame({'Date': dates, 'Rate_in_Percent': adjusted_yield})
     return bond_yield_df_adjusted
 
+##### SEASONAL DECOMPOSITION #####
+
+# Useful later for model fitting but not for correlation analysis
+# Decompose the data (seasonality, trend and residual):
+def decomp_multiplicative(data, freq=12, name=''): # Uncomment to see the decomposition
+    data_decomp = seasonal_decompose(data.set_index('Date'), model='multiplicative', period=12) 
+    # fig = data_decomp.plot()
+    # plt.suptitle(f'{name} multiplicative seasonal decomposition', y=1)
+    # fig.set_size_inches(16, 8)
+    # plt.xticks([data.index[0], data.index[len(data)//2], data.index[-1]])
+    # plt.show()
+    return data_decomp
+
+def decomp_additive(data, freq=12, name=''): # Uncomment to see the decomposition
+    data_decomp = seasonal_decompose(data.set_index('Date'), model='additive', period=12) 
+    # fig = data_decomp.plot()
+    # plt.suptitle(f'{name} additive seasonal decomposition', y=1)
+    # fig.set_size_inches(16, 8)
+    # plt.xticks([data.index[0], data.index[len(data)//2], data.index[-1]])
+    # plt.show()
+    return data_decomp
+
+##### STATIONARITY TESTS #####
+
+# KPSS Test for Stationarity
+# Null Hypothesis: the data is stationary around a constant mean, exhibiting a linear trend component
+# The Null Hypothesis is rejected if the p-value is less than the significance level
+# The Null Hypotheis is rejected if the test statistic is greater than the critical value (5% significance level)
+def is_stationary_with_kpss(data, significance_level=0.05):
+    test = kpss(data, regression='ct') # 'ct' for constant and trend component more appropriate for financial time series than 'c' for constant only
+    test_statistic = test[0]
+    p_value = test[1]
+    critical_value_ref = test[3]
+    print("KPSS p-value: {:0.5f}".format(p_value))
+    print("KPSS test statistic: {:0.5f}".format(test_statistic))
+    print("KPSS critical value: ", critical_value_ref)
+    return p_value > significance_level
+
 ##### LOG TRANSFORM #####
 
 def log_transform(df): # Assuming Index Value only contains positive values > 0
-    df['Index Value'] = df['Index Value'].apply(lambda x: math.log(x))
-    return df
-
-def log_transform_sp500(sp_500):
-    sp_500['Real'] = sp_500['Real'].apply(lambda x: math.log(x)) # Most important as its the inflation adjusted values
-    sp_500['Nominal'] = sp_500['Nominal'].apply(lambda x: math.log(x)) # Not inflation adjusted
-    return sp_500
-
-def log_transform_cpi(cpi_df):
-    cpi_df['CPI_Index'] = cpi_df['CPI_Index'].apply(lambda x: math.log(x))
-    return cpi_df
+    log_transform_df = df.apply(lambda x: math.log(x))
+    return log_transform_df
 
 ##### MAIN #####
 
@@ -516,6 +555,7 @@ def main():
     # Adjust the correlated variable's inflation:
     # CPI Index is inflation itself no need to adjust
     # SP500 is already adjusted for inflation (Real column)
+    sp500_df = sp500_df.drop(columns=['Nominal']) # Drop the nominal column
     crypto_df = adjust_inflation(crypto_df, yearly_cpi_df)
     gold_df = adjust_inflation(gold_df, yearly_cpi_df)
 
@@ -523,24 +563,51 @@ def main():
     df_inflation_percent = calculate_inflation_percent_yearly(yearly_cpi_df)
     bond_yield_df = adjust_bond_yield_inflation(bond_yield_df, df_inflation_percent)
 
+    ## Decompose the data (seasonality, trend and residual) ##
+
+    # you can retrieve residuals, trend and seasonality from the decomposed data
+    # (additive by default until proven otherwise)
+    wine_df_decomp = decomp_additive(wine_df, name='Wine Index')
+    watch_df_decomp = decomp_additive(watch_df, name='Watch Index')
+    art_df_decomp = decomp_additive(art_df, name='Art Index')
+    crypto_df_decomp = decomp_additive(crypto_df, name='Crypto Market Cap')
+    gold_df_decomp = decomp_additive(gold_df, name='Gold Prices')
+    sp500_df_decomp = decomp_additive(sp500_df, name='S&P 500 Index')
+    cpi_df_decomp = decomp_additive(cpi_df, name='CPI Index')
+    bond_yield_df_decomp = decomp_additive(bond_yield_df, name='Bond Yield')
+
+    ## Test for stationarity using KPSS ## (uncomment to see the results of the test)
+
+    # Asset Class Data
+    # print("TEST FOR STATIONARITY:", is_stationary_with_kpss(wine_df_decomp.observed)) # Not stationary at 5% significance level FALSE
+    # print("TEST FOR STATIONARITY:", is_stationary_with_kpss(watch_df_decomp.observed)) # Not stationary at 5% significance level FALSE
+    # print("TEST FOR STATIONARITY:", is_stationary_with_kpss(art_df_decomp.observed)) # Not stationary at 5% significance level FALSE
+
+    # Correlated Variables
+    # print("TEST FOR STATIONARITY:", is_stationary_with_kpss(crypto_df_decomp.observed)) # Strangely enough this is stationary at 5% significance level TRUE
+    # print("TEST FOR STATIONARITY:", is_stationary_with_kpss(gold_df_decomp.observed)) # Not stationary at 5% significance level FALSE
+    # print("TEST FOR STATIONARITY:", is_stationary_with_kpss(sp500_df_decomp.observed)) # Not stationary at 5% significance level FALSE
+    # print("TEST FOR STATIONARITY:", is_stationary_with_kpss(cpi_df_decomp.observed)) # Not stationary at 5% significance level FALSE
+
     ## Log transform the data ##
 
     # Asset Class Data
-    wine_df = log_transform(wine_df)
-    watch_df = log_transform(watch_df)
-    art_df = log_transform(art_df)
+    wine_df = log_transform(wine_df_decomp.observed) 
+    watch_df = log_transform(watch_df_decomp.observed)
+    art_df = log_transform(art_df_decomp.observed)
 
     # Correlated Variables
-    crypto_df = log_transform(crypto_df)
-    gold_df = log_transform(gold_df)
-    sp500_df = log_transform_sp500(sp500_df)
-    cpi_df = log_transform_cpi(cpi_df) 
+    crypto_df = log_transform(crypto_df_decomp.observed)
+    gold_df = log_transform(gold_df_decomp.observed)
+    sp500_df = log_transform(sp500_df_decomp.observed)
+    cpi_df = log_transform(cpi_df_decomp.observed) 
     # NB : Bond yield is already in percent (Ratio) so no need to log transform
+    bond_yield_df = bond_yield_df_decomp.observed
 
     ## Ready for analysis ##
     return wine_df, watch_df, art_df, crypto_df, gold_df, sp500_df, cpi_df, bond_yield_df
 
- 
+# main() # Uncomment to test pre-processing
 
 
 
