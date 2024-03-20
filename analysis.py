@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import preprocessing   
 
-# TODO : Find paper to support the fact stationarity is irrelevant for correlation analysis
+# TODO : Read paper : time series analysis to modeling to forecast 
 # TODO : Start correlation analysis
 
 ##### MAIN #####
