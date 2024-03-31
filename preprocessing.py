@@ -11,7 +11,6 @@ import warnings
 # warnings.filterwarnings("ignore") # Uncomment to clean terminal output from all warnings
 
 # TODO : Evaluate whether the should be decomposed multiplicatively or additively + FIND PAPER TO SUPPORT
-# TODO : Evaluate the stationarity of the data using correlogram
 # TODO : Find paper to support the use of the KPSS test for stationarity
 # TODO : REDO the plots for the data in all preprocessing steps to correct the x-axis labels
 
@@ -423,7 +422,7 @@ def log_transform(df): # Assuming Index Value only contains positive values > 0
 
 ##### MAIN #####
 
-def main():
+def main(univariate=True):
 
 ## Retrieve all data and convert them to monthly time frames under the same currency (USD) ##
     
@@ -576,7 +575,7 @@ def main():
     cpi_df_decomp = decomp_additive(cpi_df, name='CPI Index')
     bond_yield_df_decomp = decomp_additive(bond_yield_df, name='Bond Yield')
 
-    ## Test for stationarity using KPSS ## (uncomment to see the results of the test)
+    ## First Test for stationarity using KPSS ## (uncomment to see the results of the test)
 
     # Asset Class Data
     # print("TEST FOR STATIONARITY:", is_stationary_with_kpss(wine_df_decomp.observed)) # Not stationary at 5% significance level FALSE
@@ -593,69 +592,76 @@ def main():
     # Reminder: Trend, Seasonal and Residual aren't on a Log Scale
     # NaN values are present for trend and residual due to built-in filtering in decomposition
 
-    # Asset Class Data
-    wine_df = pd.DataFrame({'Log': log_transform(wine_df_decomp.observed)}) # Date is already in the index
-    wine_df['Trend'] = wine_df_decomp.trend # 6 NaN values at the beginning and end
-    wine_df['Seasonal'] = wine_df_decomp.seasonal
-    wine_df['Residual'] = wine_df_decomp.resid # 6 NaN values at the beginning and end
-    # print(wine_df.head(10))
-    # print(wine_df.tail(10))
+    # If univariate is True, we only return the original+decomposed data
+    # More specific preprocessing will be done in the univariate.py file
 
-    watch_df = pd.DataFrame({'Log': log_transform(watch_df_decomp.observed)})
-    watch_df['Trend'] = watch_df_decomp.trend # 6 NaN values at the beginning and end
-    watch_df['Seasonal'] = watch_df_decomp.seasonal
-    watch_df['Residual'] = watch_df_decomp.resid # 6 NaN values at the beginning and end
-    # print(watch_df.head(10))
-    # print(watch_df.tail(10))
-   
-    art_df = pd.DataFrame({'Log': log_transform(art_df_decomp.observed)})
-    art_df['Trend'] = art_df_decomp.trend # 6 NaN values at the beginning and end
-    art_df['Seasonal'] = art_df_decomp.seasonal
-    art_df['Residual'] = art_df_decomp.resid # 6 NaN values at the beginning and end
-    # print(art_df.head(10))
-    # print(art_df.tail(10))
+    if univariate == True:
+        return wine_df_decomp, watch_df_decomp, art_df_decomp
+        
+    else:
+        # Asset Class Data
+        wine_df = pd.DataFrame({'Log': log_transform(wine_df_decomp.observed)}) # Date is already in the index
+        wine_df['Trend'] = wine_df_decomp.trend # 6 NaN values at the beginning and end
+        wine_df['Seasonal'] = wine_df_decomp.seasonal
+        wine_df['Residual'] = wine_df_decomp.resid # 6 NaN values at the beginning and end
+        # print(wine_df.head(10))
+        # print(wine_df.tail(10))
 
-    # Correlated Variables
-    crypto_df = pd.DataFrame({'Log': log_transform(crypto_df_decomp.observed)})
-    crypto_df['Trend'] = crypto_df_decomp.trend # 6 NaN values at the beginning and end
-    crypto_df['Seasonal'] = crypto_df_decomp.seasonal
-    crypto_df['Residual'] = crypto_df_decomp.resid # 6 NaN values at the beginning and end
-    # print(crypto_df.head(10))
-    # print(crypto_df.tail(10))
+        watch_df = pd.DataFrame({'Log': log_transform(watch_df_decomp.observed)})
+        watch_df['Trend'] = watch_df_decomp.trend # 6 NaN values at the beginning and end
+        watch_df['Seasonal'] = watch_df_decomp.seasonal
+        watch_df['Residual'] = watch_df_decomp.resid # 6 NaN values at the beginning and end
+        # print(watch_df.head(10))
+        # print(watch_df.tail(10))
+    
+        art_df = pd.DataFrame({'Log': log_transform(art_df_decomp.observed)})
+        art_df['Trend'] = art_df_decomp.trend # 6 NaN values at the beginning and end
+        art_df['Seasonal'] = art_df_decomp.seasonal
+        art_df['Residual'] = art_df_decomp.resid # 6 NaN values at the beginning and end
+        # print(art_df.head(10))
+        # print(art_df.tail(10))
 
-    gold_df = pd.DataFrame({'Log': log_transform(gold_df_decomp.observed)})
-    gold_df['Trend'] = gold_df_decomp.trend # 6 NaN values at the beginning and end
-    gold_df['Seasonal'] = gold_df_decomp.seasonal
-    gold_df['Residual'] = gold_df_decomp.resid # 6 NaN values at the beginning and end
-    # print(gold_df.head(10))
-    # print(gold_df.tail(10))
+        # Correlated Variables
+        crypto_df = pd.DataFrame({'Log': log_transform(crypto_df_decomp.observed)})
+        crypto_df['Trend'] = crypto_df_decomp.trend # 6 NaN values at the beginning and end
+        crypto_df['Seasonal'] = crypto_df_decomp.seasonal
+        crypto_df['Residual'] = crypto_df_decomp.resid # 6 NaN values at the beginning and end
+        # print(crypto_df.head(10))
+        # print(crypto_df.tail(10))
 
-    sp500_df = pd.DataFrame({'Log': log_transform(sp500_df_decomp.observed)})
-    sp500_df['Trend'] = sp500_df_decomp.trend # 6 NaN values at the beginning and end
-    sp500_df['Seasonal'] = sp500_df_decomp.seasonal
-    sp500_df['Residual'] = sp500_df_decomp.resid # 6 NaN values at the beginning and end
-    # print(sp500_df.head(10))
-    # print(sp500_df.tail(10))
+        gold_df = pd.DataFrame({'Log': log_transform(gold_df_decomp.observed)})
+        gold_df['Trend'] = gold_df_decomp.trend # 6 NaN values at the beginning and end
+        gold_df['Seasonal'] = gold_df_decomp.seasonal
+        gold_df['Residual'] = gold_df_decomp.resid # 6 NaN values at the beginning and end
+        # print(gold_df.head(10))
+        # print(gold_df.tail(10))
 
-    cpi_df = pd.DataFrame({'Log': log_transform(cpi_df_decomp.observed)})
-    cpi_df['Trend'] = cpi_df_decomp.trend # 6 NaN values at the beginning and end
-    cpi_df['Seasonal'] = cpi_df_decomp.seasonal
-    cpi_df['Residual'] = cpi_df_decomp.resid # 6 NaN values at the beginning and end
-    # print(cpi_df.head(10))
-    # print(cpi_df.tail(10))
-     
-    # NB : Bond yield is already in percent (Ratio) so no need to log transform
-    bond_yield_df = pd.DataFrame({'bond yield': bond_yield_df_decomp.observed})
-    bond_yield_df['Trend'] = bond_yield_df_decomp.trend # 6 NaN values at the beginning and end
-    bond_yield_df['Seasonal'] = bond_yield_df_decomp.seasonal
-    bond_yield_df['Residual'] = bond_yield_df_decomp.resid # 6 NaN values at the beginning and end
-    # print(bond_yield_df.head(10))
-    # print(bond_yield_df.tail(10))
+        sp500_df = pd.DataFrame({'Log': log_transform(sp500_df_decomp.observed)})
+        sp500_df['Trend'] = sp500_df_decomp.trend # 6 NaN values at the beginning and end
+        sp500_df['Seasonal'] = sp500_df_decomp.seasonal
+        sp500_df['Residual'] = sp500_df_decomp.resid # 6 NaN values at the beginning and end
+        # print(sp500_df.head(10))
+        # print(sp500_df.tail(10))
+
+        cpi_df = pd.DataFrame({'Log': log_transform(cpi_df_decomp.observed)})
+        cpi_df['Trend'] = cpi_df_decomp.trend # 6 NaN values at the beginning and end
+        cpi_df['Seasonal'] = cpi_df_decomp.seasonal
+        cpi_df['Residual'] = cpi_df_decomp.resid # 6 NaN values at the beginning and end
+        # print(cpi_df.head(10))
+        # print(cpi_df.tail(10))
+        
+        # NB : Bond yield is already in percent (Ratio) so no need to log transform
+        bond_yield_df = pd.DataFrame({'bond yield': bond_yield_df_decomp.observed})
+        bond_yield_df['Trend'] = bond_yield_df_decomp.trend # 6 NaN values at the beginning and end
+        bond_yield_df['Seasonal'] = bond_yield_df_decomp.seasonal
+        bond_yield_df['Residual'] = bond_yield_df_decomp.resid # 6 NaN values at the beginning and end
+        # print(bond_yield_df.head(10))
+        # print(bond_yield_df.tail(10))
 
     ## Ready for analysis ##
     return wine_df, watch_df, art_df, crypto_df, gold_df, sp500_df, cpi_df, bond_yield_df
 
-# main() # Uncomment to test pre-processing
+# main(univariate=True) # Uncomment to test pre-processing
 
 
 
