@@ -403,7 +403,7 @@ def decomp_additive(data, freq=12, name=''): # Uncomment to see the decompositio
 # KPSS Test for Stationarity
 # Null Hypothesis: the data is stationary around a constant mean, exhibiting a linear trend component
 # The Null Hypothesis is rejected if the p-value is less than the significance level
-# The Null Hypotheis is rejected if the test statistic is greater than the critical value (5% significance level)
+# The Null Hypothesis is rejected if the test statistic is greater than the critical value (5% significance level)
 def is_stationary_with_kpss(data, significance_level=0.05):
     test = kpss(data, regression='ct') # 'ct' for constant and trend component more appropriate for financial time series than 'c' for constant only
     test_statistic = test[0]
@@ -596,6 +596,7 @@ def main(univariate=True):
     # More specific preprocessing will be done in the univariate.py file
 
     if univariate == True:
+        ## Ready for univariate work ##
         return wine_df_decomp, watch_df_decomp, art_df_decomp
         
     else:

@@ -1,0 +1,5 @@
+kpss_stat, p_value, lags, crit_values  = kpss(wine_df_smooth, regression='c')
+# print(f"KPSS Test Statistic: {kpss_stat}")
+# print(f"P-value: {p_value}")
+# print("Critical Values: \n", crit_values)
+# print(f"Is the data stationary? {p_value < significance_level}")
