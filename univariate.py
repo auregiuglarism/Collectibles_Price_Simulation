@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import preprocessing   
 from statsmodels.tsa.stattools import kpss, adfuller
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.arima.model import ARIMA
 
 # TODO : Select ARIMA Parameters using ACF and PACF
 
@@ -72,32 +73,39 @@ art_df_smooth = moving_average_smooth(art_df_diff, 30).dropna() # First 30 days 
 
 # Data is stationary after first order differencing
 
-## ACF and PACF plots to determine ARIMA parameters ##
-fig = plot_acf(wine_df_diff, color = "blue", lags=50)
-plt.title('Wine Index ACF 50 lags')
-plt.show()
+# ## ACF and PACF plots to determine ARIMA parameters ##
+# fig = plot_acf(wine_df_diff, color = "blue", lags=50)
+# plt.title('Wine Index ACF 50 lags')
+# plt.show()
 
-fig = plot_acf(watch_df_diff, color = "blue", lags=50)
-plt.title('Watch Index ACF 50 lags')
-plt.show()  
+# fig = plot_acf(watch_df_diff, color = "blue", lags=50)
+# plt.title('Watch Index ACF 50 lags')
+# plt.show()  
 
-fig = plot_acf(art_df_diff, color = "blue", lags=50)
-plt.title('Art Index ACF 50 lags')
-plt.show()
+# fig = plot_acf(art_df_diff, color = "blue", lags=50)
+# plt.title('Art Index ACF 50 lags')
+# plt.show()
 
-fig = plot_pacf(wine_df_diff, color = "green", lags=50)
-plt.title('Wine Index PACF 50 lags')
-plt.show()
+# fig = plot_pacf(wine_df_diff, color = "green", lags=50)
+# plt.title('Wine Index PACF 50 lags')
+# plt.show()
 
-fig = plot_pacf(watch_df_diff, color = "green", lags=50)
-plt.title('Watch Index PACF 50 lags')
-plt.show()
+# fig = plot_pacf(watch_df_diff, color = "green", lags=50)
+# plt.title('Watch Index PACF 50 lags')
+# plt.show()
 
-fig = plot_pacf(art_df_diff, color = "green", lags=50)
-plt.title('Art Index PACF 50 lags')
-plt.show()
+# fig = plot_pacf(art_df_diff, color = "green", lags=50)
+# plt.title('Art Index PACF 50 lags')
+# plt.show()
 
+## ARIMA Model Forecasting ##
 
+# The significant lags in the ACF and PACF at lag 1 indicate the need for AR in all three assets.
+# In the ART index, there are some significant lags at multiple intervals indicating the need for MA as well
+# The ARIMA model will be (1,0,0) for the Wine and Watch indices and (1,1,1) for the Art index
+# I don't need the d parameter since data is already stationary after first order differencing
+
+# Split data into train and test
 
 
 ##### VISUALIZATION PLOTS #####
