@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import preprocessing   
 from statsmodels.tsa.stattools import kpss, adfuller
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 # TODO : Select ARIMA Parameters using ACF and PACF
 
@@ -52,10 +53,10 @@ art_df_smooth = moving_average_smooth(art_df_diff, 30).dropna() # First 30 days 
 
 ## Evaluating stationarity of the transformed (not smoothed) data using KPSS and ADF tests ##
 # Wine
-stationary = is_stationary_with_KPSS(wine_df_diff, significance_level=0.05)
-print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
-stationary = is_stationary_with_ADF(wine_df_diff, significance_level=0.05)
-print(f"Is the data stationary according to the ADF Test? {stationary}") # True
+# stationary = is_stationary_with_KPSS(wine_df_diff, significance_level=0.05)
+# print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
+# stationary = is_stationary_with_ADF(wine_df_diff, significance_level=0.05)
+# print(f"Is the data stationary according to the ADF Test? {stationary}") # True
 
 # Watch
 # stationary = is_stationary_with_KPSS(watch_df_diff, significance_level=0.05)
@@ -72,11 +73,34 @@ print(f"Is the data stationary according to the ADF Test? {stationary}") # True
 # Data is stationary after first order differencing
 
 ## ACF and PACF plots to determine ARIMA parameters ##
+fig = plot_acf(wine_df_diff, color = "blue", lags=50)
+plt.title('Wine Index ACF 50 lags')
+plt.show()
+
+fig = plot_acf(watch_df_diff, color = "blue", lags=50)
+plt.title('Watch Index ACF 50 lags')
+plt.show()  
+
+fig = plot_acf(art_df_diff, color = "blue", lags=50)
+plt.title('Art Index ACF 50 lags')
+plt.show()
+
+fig = plot_pacf(wine_df_diff, color = "green", lags=50)
+plt.title('Wine Index PACF 50 lags')
+plt.show()
+
+fig = plot_pacf(watch_df_diff, color = "green", lags=50)
+plt.title('Watch Index PACF 50 lags')
+plt.show()
+
+fig = plot_pacf(art_df_diff, color = "green", lags=50)
+plt.title('Art Index PACF 50 lags')
+plt.show()
 
 
 
 
-##### PLOTS #####
+##### VISUALIZATION PLOTS #####
 
 ## Plotting Differenced Data ##
 # plt.plot(wine_df_diff)
