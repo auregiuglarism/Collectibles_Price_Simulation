@@ -7,7 +7,7 @@ from statsmodels.tsa.stattools import kpss, adfuller
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.arima.model import ARIMA
 
-# TODO : Select ARIMA Parameters using ACF and PACF
+# TODO : Implement SARIMA for all three indices
 
 def moving_average_smooth(df, window_size):
     moving_avg = df.rolling(window=window_size).mean()
@@ -71,44 +71,60 @@ art_df_smooth = moving_average_smooth(art_df_diff, 30).dropna() # First 30 days 
 # stationary = is_stationary_with_ADF(art_df_diff, significance_level=0.05)
 # print(f"Is the data stationary according to the ADF Test? {stationary}") # True
 
-# Data is stationary after first order differencing
-
-# ## ACF and PACF plots to determine ARIMA parameters ##
-# fig = plot_acf(wine_df_diff, color = "blue", lags=50)
-# plt.title('Wine Index ACF 50 lags')
-# plt.show()
-
-# fig = plot_acf(watch_df_diff, color = "blue", lags=50)
-# plt.title('Watch Index ACF 50 lags')
-# plt.show()  
-
-# fig = plot_acf(art_df_diff, color = "blue", lags=50)
-# plt.title('Art Index ACF 50 lags')
-# plt.show()
-
-# fig = plot_pacf(wine_df_diff, color = "green", lags=50)
-# plt.title('Wine Index PACF 50 lags')
-# plt.show()
-
-# fig = plot_pacf(watch_df_diff, color = "green", lags=50)
-# plt.title('Watch Index PACF 50 lags')
-# plt.show()
-
-# fig = plot_pacf(art_df_diff, color = "green", lags=50)
-# plt.title('Art Index PACF 50 lags')
-# plt.show()
-
-## ARIMA Model Forecasting ##
+## SARIMA (p,q,d)*(P,D,Q) Model Forecasting ##
 
 # The significant lags in the ACF and PACF at lag 1 indicate the need for AR in all three assets.
 # In the ART index, there are some significant lags at multiple intervals indicating the need for MA as well
-# The ARIMA model will be (1,0,0) for the Wine and Watch indices and (1,1,1) for the Art index
-# I don't need the d parameter since data is already stationary after first order differencing
+# The ARIMA model will be (1,1,0) for the Wine and Watch indices and (1,1,1) for the Art index
+# First order differencing makes the data stationary so I will set my d = 1
+
+# WINE INDEX DATA FORECASTING
 
 # Split data into train and test
+wine_train = wine_df_decomp.observed[:int(0.8*len(wine_df_decomp.observed))]
+wine_test = wine_df_decomp.observed[int(0.8*len(wine_df_decomp.observed)):]
 
+# Fit (S)ARIMA model
+model = ARIMA(wine_train, trend='n', order=(1,1,0),  # MA here does not change anything as expected
+              enforce_stationarity=True,
+              enforce_invertibility=False, # this param inverts the fit which isn't good for our data
+              seasonal_order=(0,1,1,53)) # A large seasonal order to account to capture subtle seasonality and complex pattern of the data.
+
+fit_results = model.fit()
+# print(fit_results.summary())
+
+# Testing Forecast
+forecast_steps = wine_test.shape[0]
+forecast = fit_results.get_forecast(steps=forecast_steps)
+forecast_ci = forecast.conf_int()
+yhat_test = forecast.predicted_mean.values # Apply the exp transformation if you used log transform before to invert scales back
+
+y_test = wine_test
+baseline = np.full(len(y_test), y_test[0])
+
+# Global Forecast
+
+# Plot Testing forecast
+plt.plot(yhat_test, color="green", label="predicted")
+plt.plot(y_test, color="blue", label="observed")
+plt.plot(baseline, color="red", label="baseline")
+plt.legend(loc='best')
+plt.title('Compare Forecasted and Observed Wine Index Values for Test Set')
+plt.xticks([0, len(y_test)/2, len(y_test)-1])
+plt.xlabel('Time')
+plt.ylabel('Index Value')
+plt.show()
+
+# WATCH INDEX DATA FORECASTING
 
 ##### VISUALIZATION PLOTS #####
+
+# plt.plot(wine_df_decomp.observed)
+# plt.title('Wine Index')
+# plt.xlabel('Time')
+# plt.ylabel('Index Value')
+# plt.xticks([0, len(wine_df_decomp.observed)/2, len(wine_df_decomp.observed)-1])
+# plt.show()
 
 ## Plotting Differenced Data ##
 # plt.plot(wine_df_diff)
@@ -152,6 +168,33 @@ art_df_smooth = moving_average_smooth(art_df_diff, 30).dropna() # First 30 days 
 # plt.xlabel('Time')
 # plt.ylabel('Absolute Change in Index (30 Day Moving Average)')
 # plt.xticks([0, len(art_df_smooth)/2, len(art_df_smooth)-1])
+# plt.show()
+
+# Data is stationary after first order differencing
+
+# ## ACF and PACF plots to determine ARIMA parameters ##
+# fig = plot_acf(wine_df_diff, color = "blue", lags=50)
+# plt.title('Wine Index ACF 50 lags')
+# plt.show()
+
+# fig = plot_acf(watch_df_diff, color = "blue", lags=50)
+# plt.title('Watch Index ACF 50 lags')
+# plt.show()  
+
+# fig = plot_acf(art_df_diff, color = "blue", lags=50)
+# plt.title('Art Index ACF 50 lags')
+# plt.show()
+
+# fig = plot_pacf(wine_df_diff, color = "green", lags=50)
+# plt.title('Wine Index PACF 50 lags')
+# plt.show()
+
+# fig = plot_pacf(watch_df_diff, color = "green", lags=50)
+# plt.title('Watch Index PACF 50 lags')
+# plt.show()
+
+# fig = plot_pacf(art_df_diff, color = "green", lags=50)
+# plt.title('Art Index PACF 50 lags')
 # plt.show()
 
 
