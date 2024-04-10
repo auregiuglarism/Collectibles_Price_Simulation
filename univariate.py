@@ -6,8 +6,9 @@ import preprocessing
 from statsmodels.tsa.stattools import kpss, adfuller
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.arima.model import ARIMA
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 
-# TODO : Implement SARIMA for all three indices
+# TODO : Implement and optimize SARIMA for all three indices
 
 def moving_average_smooth(df, window_size):
     moving_avg = df.rolling(window=window_size).mean()
@@ -102,7 +103,15 @@ yhat_test = forecast.predicted_mean.values # Apply the exp transformation if you
 y_test = wine_test
 baseline = np.full(len(y_test), y_test[0])
 
+mae = mean_absolute_error(y_test, yhat_test)
+mse = mean_squared_error(y_test, yhat_test)
+print("MAE (test): {:0.1f}".format(mae))
+print("MSE (test): {:0.1f}".format(mse))
+
 # Global Forecast
+short_term = 12 # 1 Year
+middle_term = 12*5 # 5 Years
+long_term = wine_train.shape[0] # Length of training data : 10+ years
 
 # Plot Testing forecast
 plt.plot(yhat_test, color="green", label="predicted")
@@ -116,6 +125,8 @@ plt.ylabel('Index Value')
 plt.show()
 
 # WATCH INDEX DATA FORECASTING
+
+# ART INDEX DATA FORECASTING
 
 ##### VISUALIZATION PLOTS #####
 
