@@ -1,1 +1,0 @@
-plt.xticks([0, len(y_test)/2, len(y_test)-1])
