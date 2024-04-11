@@ -6,9 +6,12 @@ import preprocessing
 from statsmodels.tsa.stattools import kpss, adfuller
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.arima.model import ARIMAResults
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 # TODO : Implement and optimize SARIMA for all three indices
+
+##### PREPROCESSING #####
 
 def moving_average_smooth(df, window_size):
     moving_avg = df.rolling(window=window_size).mean()
@@ -30,30 +33,52 @@ def is_stationary_with_KPSS(data, significance_level=0.05):
     print("Critical Values: \n", crit_values)
     return p_value > significance_level
 
+##### MODELS #####
+
+def create_SARIMA_wine(wine_train):
+    model = ARIMA(wine_train, trend='n', order=(1,1,0),  # MA here does not change anything as expected
+            enforce_stationarity=True,
+            enforce_invertibility=False, # this param inverts the fit which isn't good for our data
+            seasonal_order=(0,1,1,53)) # A large seasonal order to account to capture subtle seasonality and complex pattern of the data.
+
+    fit_results = model.fit()
+    print(fit_results.summary())
+    fit_results.save('models\wine_sarima.pkl')
+
+def create_SARIMA_watch(watch_train):
+    model = ARIMA(watch_train, trend='n', order=(),  
+            enforce_stationarity=True,
+            enforce_invertibility=False,
+            seasonal_order=()) 
+
+    fit_results = model.fit()
+    print(fit_results.summary())
+    fit_results.save('models\watch_sarima.pkl')
+
 ##### MAIN #####
 
 ## Load the data from global pre-processing.py ##
 
 # Data is adjusted for inflation and decomposed into trend, seasonality and residuals
 wine_df_decomp, watch_df_decomp, art_dfdecomp = preprocessing.main(univariate=True)
-# print(wine_df.head(10))
-# print(wine_df.tail(10))
 
-## Data is non-stationary, so we apply first order differencing ##
-wine_df_diff = wine_df_decomp.observed.diff().dropna()
-watch_df_diff = watch_df_decomp.observed.diff().dropna()
-art_df_diff = art_dfdecomp.observed.diff().dropna()
+## Evaluating stationarity and the (S)ARIMA Parameters ##
 
-# NB The data exhibits WAY better stationary after first order differencing
-# Might need moving average to smoothen big spikes
-wine_df_smooth = moving_average_smooth(wine_df_diff, 30).dropna() # First 30 days are NaN
-watch_df_smooth = moving_average_smooth(watch_df_diff, 30).dropna() # First 30 days are NaN
-art_df_smooth = moving_average_smooth(art_df_diff, 30).dropna() # First 30 days are NaN
+# # Data is non-stationary, so we apply first order differencing
+# wine_df_diff = wine_df_decomp.observed.diff().dropna()
+# watch_df_diff = watch_df_decomp.observed.diff().dropna()
+# art_df_diff = art_dfdecomp.observed.diff().dropna()
+
+# # NB The data exhibits WAY better stationary after first order differencing
+# # Might need moving average to smoothen big spikes
+# wine_df_smooth = moving_average_smooth(wine_df_diff, 30).dropna() # First 30 days are NaN
+# watch_df_smooth = moving_average_smooth(watch_df_diff, 30).dropna() # First 30 days are NaN
+# art_df_smooth = moving_average_smooth(art_df_diff, 30).dropna() # First 30 days are NaN
 
 # Smoothing the data with a 30 day moving average messes (for some reason) the stationarity of the data.
 # Increasing the window size makes it worse.
 
-## Evaluating stationarity of the transformed (not smoothed) data using KPSS and ADF tests ##
+# Evaluating stationarity of the transformed (not smoothed) data using KPSS and ADF tests 
 # Wine
 # stationary = is_stationary_with_KPSS(wine_df_diff, significance_level=0.05)
 # print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
@@ -80,23 +105,17 @@ art_df_smooth = moving_average_smooth(art_df_diff, 30).dropna() # First 30 days 
 # First order differencing makes the data stationary so I will set my d = 1
 
 # WINE INDEX DATA FORECASTING
-
 # Split data into train and test
 wine_train = wine_df_decomp.observed[:int(0.8*len(wine_df_decomp.observed))]
 wine_test = wine_df_decomp.observed[int(0.8*len(wine_df_decomp.observed)):]
 
-# Fit (S)ARIMA model
-model = ARIMA(wine_train, trend='n', order=(1,1,0),  # MA here does not change anything as expected
-              enforce_stationarity=True,
-              enforce_invertibility=False, # this param inverts the fit which isn't good for our data
-              seasonal_order=(0,1,1,53)) # A large seasonal order to account to capture subtle seasonality and complex pattern of the data.
-
-fit_results = model.fit()
-# print(fit_results.summary())
+# Create (S)ARIMA model
+# create_SARIMA_wine(wine_train) # Only run once
+wine_model = ARIMAResults.load('models\wine_sarima.pkl')
 
 # Testing Forecast
 forecast_steps = wine_test.shape[0]
-forecast = fit_results.get_forecast(steps=forecast_steps)
+forecast = wine_model.get_forecast(steps=forecast_steps)
 forecast_ci = forecast.conf_int()
 yhat_test = forecast.predicted_mean.values # Apply the exp transformation if you used log transform before to invert scales back
 
@@ -105,26 +124,45 @@ baseline = np.full(len(y_test), y_test[0])
 
 mae = mean_absolute_error(y_test, yhat_test)
 mse = mean_squared_error(y_test, yhat_test)
-print("MAE (test): {:0.1f}".format(mae))
-print("MSE (test): {:0.1f}".format(mse))
-
-# Global Forecast
-short_term = 12 # 1 Year
-middle_term = 12*5 # 5 Years
-long_term = wine_train.shape[0] # Length of training data : 10+ years
-
-# Plot Testing forecast
-plt.plot(yhat_test, color="green", label="predicted")
-plt.plot(y_test, color="blue", label="observed")
-plt.plot(baseline, color="red", label="baseline")
-plt.legend(loc='best')
-plt.title('Compare Forecasted and Observed Wine Index Values for Test Set')
-plt.xticks([0, len(y_test)/2, len(y_test)-1])
-plt.xlabel('Time')
-plt.ylabel('Index Value')
-plt.show()
+mae_baseline = mean_absolute_error(y_test, baseline)
+mse_baseline = mean_squared_error(y_test, baseline)
+# print("WINE : MAE SARIMA (test): {:0.1f}".format(mae))
+# print("WINE : MSE SARIMA (test): {:0.1f}".format(mse))
+# print("WINE : MAE Baseline (test): {:0.1f}".format(mae_baseline))
+# print("WINE : MSE Baseline (test): {:0.1f}".format(mse_baseline))
 
 # WATCH INDEX DATA FORECASTING
+# Split data into train and test
+watch_train = watch_df_decomp.observed[:int(0.8*len(watch_df_decomp.observed))]
+watch_test = watch_df_decomp.observed[int(0.8*len(watch_df_decomp.observed)):]
+
+# Create (S)ARIMA model
+# create_SARIMA_watch(watch_train) # Only run once
+model = ARIMA(np.log(watch_train), trend='n', order=(1,1,0), # MA here does not change anything as expected 
+              enforce_stationarity=True,
+              enforce_invertibility=False, # This param inverts the fit and makes us hover just above baseline
+              seasonal_order=(0,1,1,35)) # A large seasonal order to capture subtle seasonality and complex pattern of the data.
+
+watch_model = model.fit()
+print(watch_model.summary())
+
+# Testing Forecast
+forecast_steps = watch_test.shape[0]
+forecast = watch_model.get_forecast(steps=forecast_steps)
+forecast_ci = forecast.conf_int()
+yhat_test = np.exp(forecast.predicted_mean).values # Apply the exp transformation if you used log transform before to invert scales back
+
+y_test = watch_test
+baseline = np.full(len(y_test), y_test[0])
+
+mae = mean_absolute_error(y_test, yhat_test)
+mse = mean_squared_error(y_test, yhat_test)
+mae_baseline = mean_absolute_error(y_test, baseline)
+mse_baseline = mean_squared_error(y_test, baseline)
+print("WATCH MAE SARIMA (test): {:0.1f}".format(mae))
+print("WATCH MSE SARIMA (test): {:0.1f}".format(mse))
+print("WATCH MAE Baseline (test): {:0.1f}".format(mae_baseline))
+print("WATCH MSE Baseline (test): {:0.1f}".format(mse_baseline))
 
 # ART INDEX DATA FORECASTING
 
@@ -207,6 +245,29 @@ plt.show()
 # fig = plot_pacf(art_df_diff, color = "green", lags=50)
 # plt.title('Art Index PACF 50 lags')
 # plt.show()
+
+## Forecasting Testing Plots ##
+# Plot Wine Testing forecast
+# plt.plot(yhat_test, color="green", label="predicted")
+# plt.plot(y_test, color="blue", label="observed")
+# plt.plot(baseline, color="red", label="baseline")
+# plt.legend(loc='best')
+# plt.title('Compare Forecasted and Observed Wine Index Values for Test Set')
+# plt.xticks([0, len(y_test)/2, len(y_test)-1])
+# plt.xlabel('Time')
+# plt.ylabel('Index Value')
+# plt.show()
+
+# Plot Watch Testing forecast
+plt.plot(yhat_test, color="green", label="predicted")
+plt.plot(y_test, color="blue", label="observed")
+plt.plot(baseline, color="red", label="baseline")
+plt.legend(loc='best')
+plt.title('Compare Forecasted and Observed Watch Index Values for Test Set')
+plt.xticks([0, len(y_test)/2, len(y_test)-1])
+plt.xlabel('Time')
+plt.ylabel('Index Value')
+plt.show()
 
 
 
