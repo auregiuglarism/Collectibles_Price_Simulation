@@ -46,10 +46,10 @@ def create_SARIMA_wine(wine_train):
     fit_results.save('models\wine_sarima.pkl')
 
 def create_SARIMA_watch(watch_train):
-    model = ARIMA(watch_train, trend='n', order=(),  
+    model = ARIMA(watch_train, trend='n', order=(1,1,0), # MA here does not change anything as expected
             enforce_stationarity=True,
-            enforce_invertibility=False,
-            seasonal_order=()) 
+            enforce_invertibility=False, # This param inverts the fit and makes us hover just above baseline
+            seasonal_order=(0,1,1,35)) # A large seasonal order to capture subtle seasonality and complex pattern of the data.
 
     fit_results = model.fit()
     print(fit_results.summary())
@@ -138,13 +138,7 @@ watch_test = watch_df_decomp.observed[int(0.8*len(watch_df_decomp.observed)):]
 
 # Create (S)ARIMA model
 # create_SARIMA_watch(watch_train) # Only run once
-model = ARIMA(np.log(watch_train), trend='n', order=(1,1,0), # MA here does not change anything as expected 
-              enforce_stationarity=True,
-              enforce_invertibility=False, # This param inverts the fit and makes us hover just above baseline
-              seasonal_order=(0,1,1,35)) # A large seasonal order to capture subtle seasonality and complex pattern of the data.
-
-watch_model = model.fit()
-print(watch_model.summary())
+watch_model = ARIMAResults.load('models\watch_sarima.pkl')
 
 # Testing Forecast
 forecast_steps = watch_test.shape[0]
