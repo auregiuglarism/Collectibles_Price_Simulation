@@ -9,7 +9,8 @@ from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.arima.model import ARIMAResults
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
-# TODO : Implement and optimize SARIMA for all three indices
+# TODO : Now make general short, medium and long term forecasts for each asset
+# TODO : Justify the choice of SARIMA parameters for each asset in the report
 
 ##### PREPROCESSING #####
 
@@ -45,8 +46,48 @@ def create_SARIMA_wine(wine_train):
     print(fit_results.summary())
     fit_results.save('models\wine_sarima.pkl')
 
+def test_SARIMA_wine(wine_test): # Testing data
+    wine_model = ARIMAResults.load('models\wine_sarima.pkl')
+
+    # Testing Forecast
+    forecast_steps = wine_test.shape[0]
+    forecast = wine_model.get_forecast(steps=forecast_steps)
+    forecast_ci = forecast.conf_int()
+    yhat_test = forecast.predicted_mean.values # Apply the exp transformation if you used log transform before to invert scales back
+
+    y_test = wine_test
+    baseline = np.full(len(y_test), y_test[0])
+    baseline_mean = np.full(len(y_test), y_test.mean())
+
+    # Evaluate the model
+    mae = mean_absolute_error(y_test, yhat_test)
+    mse = mean_squared_error(y_test, yhat_test)
+    mae_baseline = mean_absolute_error(y_test, baseline)
+    mse_baseline = mean_squared_error(y_test, baseline)
+    mae_baseline_mean = mean_absolute_error(y_test, baseline_mean)
+    mse_baseline_mean = mean_squared_error(y_test, baseline_mean)
+    print("WINE MAE SARIMA (test): {:0.1f}".format(mae))
+    print("WINE MSE SARIMA (test): {:0.1f}".format(mse))
+    print("WINE MAE Baseline (test): {:0.1f}".format(mae_baseline))
+    print("WINE MSE Baseline (test): {:0.1f}".format(mse_baseline))
+    print("WINE MAE Baseline Mean (test): {:0.1f}".format(mae_baseline_mean))
+    print("WINE MSE Baseline Mean (test): {:0.1f}".format(mse_baseline_mean))
+
+
+    # Plot the results
+    plt.plot(yhat_test, color="green", label="predicted")
+    plt.plot(y_test, color="blue", label="observed")
+    plt.plot(baseline, color="red", label="baseline")
+    plt.plot(baseline_mean, color="purple", label="mean")
+    plt.legend(loc='best')
+    plt.title('Compare Forecasted and Observed Wine Index Values for Test Set')
+    plt.xticks([0, len(y_test)/2, len(y_test)-1])
+    plt.xlabel('Time')
+    plt.ylabel('Index Value')
+    plt.show()
+
 def create_SARIMA_watch(watch_train):
-    model = ARIMA(watch_train, trend='n', order=(1,1,0), # MA here does not change anything as expected
+    model = ARIMA(np.log(watch_train), trend='n', order=(1,1,0), # MA here does not change anything as expected
             enforce_stationarity=True,
             enforce_invertibility=False, # This param inverts the fit and makes us hover just above baseline
             seasonal_order=(0,1,1,35)) # A large seasonal order to capture subtle seasonality and complex pattern of the data.
@@ -54,6 +95,93 @@ def create_SARIMA_watch(watch_train):
     fit_results = model.fit()
     print(fit_results.summary())
     fit_results.save('models\watch_sarima.pkl')
+
+def test_SARIMA_watch(watch_test): # Testing data
+    watch_model = ARIMAResults.load('models\watch_sarima.pkl')
+
+    # Testing Forecast
+    forecast_steps = watch_test.shape[0]
+    forecast = watch_model.get_forecast(steps=forecast_steps)
+    forecast_ci = forecast.conf_int()
+    yhat_test = np.exp(forecast.predicted_mean).values # Apply the exp transformation if you used log transform before to invert scales back
+
+    y_test = watch_test
+    baseline = np.full(len(y_test), y_test[0])
+    baseline_mean = np.full(len(y_test), y_test.mean())
+
+    # Evaluate the model
+    mae = mean_absolute_error(y_test, yhat_test)
+    mse = mean_squared_error(y_test, yhat_test)
+    mae_baseline = mean_absolute_error(y_test, baseline)
+    mse_baseline = mean_squared_error(y_test, baseline)
+    mae_baseline_mean = mean_absolute_error(y_test, baseline_mean)
+    mse_baseline_mean = mean_squared_error(y_test, baseline_mean)
+    print("WATCH MAE SARIMA (test): {:0.1f}".format(mae))
+    print("WATCH MSE SARIMA (test): {:0.1f}".format(mse))
+    print("WATCH MAE Baseline (test): {:0.1f}".format(mae_baseline))
+    print("WATCH MSE Baseline (test): {:0.1f}".format(mse_baseline))
+    print("WATCH MAE Baseline Mean (test): {:0.1f}".format(mae_baseline_mean))
+    print("WATCH MSE Baseline Mean (test): {:0.1f}".format(mse_baseline_mean))
+
+    # Plot the results
+    plt.plot(yhat_test, color="green", label="predicted")
+    plt.plot(y_test, color="blue", label="observed")
+    plt.plot(baseline, color="red", label="baseline")
+    plt.plot(baseline_mean, color="purple", label="mean")
+    plt.legend(loc='best')
+    plt.title('Compare Forecasted and Observed Watch Index Values for Test Set')
+    plt.xticks([0, len(y_test)/2, len(y_test)-1])
+    plt.xlabel('Time')
+    plt.ylabel('Index Value')
+    plt.show()
+
+def create_SARIMA_art(art_train):
+    model = ARIMA(art_train, trend='n', order=(1,1,1), # Correlogram indicates the need for MA and AR.
+            enforce_stationarity=True, 
+            enforce_invertibility=True, # Invertibility is necessary since the MA component is active
+            seasonal_order=(0,1,1,42)) # A large seasonal order to capture subtle seasonality and complex pattern of the data.
+    
+    fit_results = model.fit()
+    print(fit_results.summary())
+    fit_results.save(f"models/art_sarima.pkl")
+
+def test_SARIMA_art(art_test): # Testing data
+    art_model = ARIMAResults.load(f'models/art_sarima.pkl')
+
+    forecast_steps = art_test.shape[0]
+    forecast = art_model.get_forecast(steps=forecast_steps)
+    forecast_ci = forecast.conf_int()
+    yhat_test = forecast.predicted_mean.values # Apply the exp transformation if you used log transform before to invert scales back
+
+    y_test = art_test
+    baseline = np.full(len(y_test), y_test[0])
+    baseline_mean = np.full(len(y_test), y_test.mean())
+
+    # Evaluate the model
+    mae = mean_absolute_error(y_test, yhat_test)
+    mse = mean_squared_error(y_test, yhat_test)
+    mae_baseline = mean_absolute_error(y_test, baseline)
+    mse_baseline = mean_squared_error(y_test, baseline)
+    mae_baseline_mean = mean_absolute_error(y_test, baseline_mean)
+    mse_baseline_mean = mean_squared_error(y_test, baseline_mean)
+    print("ART MAE SARIMA (test): {:0.1f}".format(mae))
+    print("ART MSE SARIMA (test): {:0.1f}".format(mse))
+    print("ART MAE Baseline (test): {:0.1f}".format(mae_baseline))
+    print("ART MSE Baseline (test): {:0.1f}".format(mse_baseline))
+    print("ART MAE Baseline Mean (test): {:0.1f}".format(mae_baseline_mean))
+    print("ART MSE Baseline Mean (test): {:0.1f}".format(mse_baseline_mean))
+
+    # Plot the results
+    plt.plot(yhat_test, color="green", label="predicted")
+    plt.plot(y_test, color="blue", label="observed")
+    plt.plot(baseline, color="red", label="baseline")
+    plt.plot(baseline_mean, color="purple", label="mean")
+    plt.legend(loc='best')
+    plt.title('Compare Forecasted and Observed Art Index Values for Test Set')
+    plt.xticks([0, len(y_test)/2, len(y_test)-1])
+    plt.xlabel('Time')
+    plt.ylabel('Index Value')
+    plt.show()
 
 ##### MAIN #####
 
@@ -111,25 +239,9 @@ wine_test = wine_df_decomp.observed[int(0.8*len(wine_df_decomp.observed)):]
 
 # Create (S)ARIMA model
 # create_SARIMA_wine(wine_train) # Only run once
-wine_model = ARIMAResults.load('models\wine_sarima.pkl')
 
-# Testing Forecast
-forecast_steps = wine_test.shape[0]
-forecast = wine_model.get_forecast(steps=forecast_steps)
-forecast_ci = forecast.conf_int()
-yhat_test = forecast.predicted_mean.values # Apply the exp transformation if you used log transform before to invert scales back
-
-y_test = wine_test
-baseline = np.full(len(y_test), y_test[0])
-
-mae = mean_absolute_error(y_test, yhat_test)
-mse = mean_squared_error(y_test, yhat_test)
-mae_baseline = mean_absolute_error(y_test, baseline)
-mse_baseline = mean_squared_error(y_test, baseline)
-# print("WINE : MAE SARIMA (test): {:0.1f}".format(mae))
-# print("WINE : MSE SARIMA (test): {:0.1f}".format(mse))
-# print("WINE : MAE Baseline (test): {:0.1f}".format(mae_baseline))
-# print("WINE : MSE Baseline (test): {:0.1f}".format(mse_baseline))
+# Test (S)ARIMA model
+test_SARIMA_wine(wine_test)
 
 # WATCH INDEX DATA FORECASTING
 # Split data into train and test
@@ -138,28 +250,21 @@ watch_test = watch_df_decomp.observed[int(0.8*len(watch_df_decomp.observed)):]
 
 # Create (S)ARIMA model
 # create_SARIMA_watch(watch_train) # Only run once
-watch_model = ARIMAResults.load('models\watch_sarima.pkl')
 
-# Testing Forecast
-forecast_steps = watch_test.shape[0]
-forecast = watch_model.get_forecast(steps=forecast_steps)
-forecast_ci = forecast.conf_int()
-yhat_test = np.exp(forecast.predicted_mean).values # Apply the exp transformation if you used log transform before to invert scales back
-
-y_test = watch_test
-baseline = np.full(len(y_test), y_test[0])
-
-mae = mean_absolute_error(y_test, yhat_test)
-mse = mean_squared_error(y_test, yhat_test)
-mae_baseline = mean_absolute_error(y_test, baseline)
-mse_baseline = mean_squared_error(y_test, baseline)
-print("WATCH MAE SARIMA (test): {:0.1f}".format(mae))
-print("WATCH MSE SARIMA (test): {:0.1f}".format(mse))
-print("WATCH MAE Baseline (test): {:0.1f}".format(mae_baseline))
-print("WATCH MSE Baseline (test): {:0.1f}".format(mse_baseline))
+# Test (S)ARIMA model
+test_SARIMA_watch(watch_test)
 
 # ART INDEX DATA FORECASTING
+# Split data into train and test
+art_train = art_dfdecomp.observed[:int(0.8*len(art_dfdecomp.observed))]
+art_test = art_dfdecomp.observed[int(0.8*len(art_dfdecomp.observed)):]
 
+# Create (S)ARIMA model
+# create_SARIMA_art(art_train) # Only run once
+
+# Test (S)ARIMA model
+test_SARIMA_art(art_test)
+      
 ##### VISUALIZATION PLOTS #####
 
 # plt.plot(wine_df_decomp.observed)
@@ -240,28 +345,8 @@ print("WATCH MSE Baseline (test): {:0.1f}".format(mse_baseline))
 # plt.title('Art Index PACF 50 lags')
 # plt.show()
 
-## Forecasting Testing Plots ##
-# Plot Wine Testing forecast
-# plt.plot(yhat_test, color="green", label="predicted")
-# plt.plot(y_test, color="blue", label="observed")
-# plt.plot(baseline, color="red", label="baseline")
-# plt.legend(loc='best')
-# plt.title('Compare Forecasted and Observed Wine Index Values for Test Set')
-# plt.xticks([0, len(y_test)/2, len(y_test)-1])
-# plt.xlabel('Time')
-# plt.ylabel('Index Value')
-# plt.show()
 
-# Plot Watch Testing forecast
-plt.plot(yhat_test, color="green", label="predicted")
-plt.plot(y_test, color="blue", label="observed")
-plt.plot(baseline, color="red", label="baseline")
-plt.legend(loc='best')
-plt.title('Compare Forecasted and Observed Watch Index Values for Test Set')
-plt.xticks([0, len(y_test)/2, len(y_test)-1])
-plt.xlabel('Time')
-plt.ylabel('Index Value')
-plt.show()
+
 
 
 
