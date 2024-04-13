@@ -568,6 +568,7 @@ def main(univariate=True):
     # (additive by default until proven otherwise)
     wine_df_decomp = decomp_additive(wine_df, name='Wine Index')
     watch_df_decomp = decomp_additive(watch_df, name='Watch Index')
+    art_df = art_df.drop(0) # Drop first row of art_df first, will cause problems for forecasting otherwise later on
     art_df_decomp = decomp_additive(art_df, name='Art Index')
     crypto_df_decomp = decomp_additive(crypto_df, name='Crypto Market Cap')
     gold_df_decomp = decomp_additive(gold_df, name='Gold Prices')

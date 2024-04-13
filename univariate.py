@@ -94,8 +94,7 @@ def forecast_SARIMA_wine(wine_data, wine_train, wine_test, forecast_steps, lengt
 
     x_axis = pd.date_range(start=wine_data.index[0], end=wine_data.index[-1], freq = 'M')
     x_axis_forecast = pd.date_range(start=wine_test.index[0], end = end_date, freq = 'M')
-    print(len(x_axis_forecast))
-    print(len(yhat))
+
     plt.plot(x_axis, wine_data.values, color="blue", label="observed data")
     plt.plot(x_axis_forecast, yhat, color="red", label="forecast", linestyle="--")
     plt.legend(loc='best')
@@ -154,6 +153,26 @@ def test_SARIMA_watch(watch_test): # Testing data
     plt.ylabel('Index Value')
     plt.show()
 
+def forecast_SARIMA_watch(watch_data, watch_train, watch_test, forecast_steps, length, end_date):
+    watch_model = ARIMAResults.load('models\watch_sarima.pkl')
+    forecast = watch_model.get_forecast(steps=forecast_steps)
+    forecast_ci = forecast.conf_int()
+    yhat = np.exp(forecast.predicted_mean).values # Apply the exp transformation if you used log transform during fit before to invert scales back
+
+    x_axis = pd.date_range(start=watch_data.index[0], end=watch_data.index[-1], freq = 'MS')
+    x_axis_forecast = pd.date_range(start=watch_test.index[0], end = end_date, freq = 'MS')
+
+    print(len(x_axis_forecast))
+    print(len(yhat))
+
+    plt.plot(x_axis, watch_data.values, color="blue", label="observed data")
+    plt.plot(x_axis_forecast, yhat, color="red", label="forecast", linestyle="--")
+    plt.legend(loc='best')
+    plt.title(f'{length} term forecast of watch index values')
+    plt.xlabel('Time')
+    plt.ylabel('Index Value')
+    plt.show()
+
 def create_SARIMA_art(art_train):
     model = ARIMA(art_train, trend='n', order=(1,1,1), # Correlogram indicates the need for MA and AR.
             enforce_stationarity=True, 
@@ -198,6 +217,23 @@ def test_SARIMA_art(art_test): # Testing data
     plt.legend(loc='best')
     plt.title('Compare Forecasted and Observed Art Index Values for Test Set')
     plt.xticks([0, len(y_test)/2, len(y_test)-1])
+    plt.xlabel('Time')
+    plt.ylabel('Index Value')
+    plt.show()
+
+def forecast_SARIMA_art(art_data, art_train, art_test, forecast_steps, length, end_date):
+    art_model = ARIMAResults.load(f'models/art_sarima.pkl')
+    forecast = art_model.get_forecast(steps=forecast_steps)
+    forecast_ci = forecast.conf_int()
+    yhat = forecast.predicted_mean.values # Apply the exp transformation if you used log transform during fit before to invert scales back
+
+    x_axis = pd.date_range(start=art_data.index[0], end=art_data.index[-1], freq = 'MS')
+    x_axis_forecast = pd.date_range(start=art_test.index[0], end = end_date, freq = 'MS')
+
+    plt.plot(x_axis, art_data.values, color="blue", label="observed data")
+    plt.plot(x_axis_forecast, yhat, color="red", label="forecast", linestyle="--")
+    plt.legend(loc='best')
+    plt.title(f'{length} term forecast of art index values')
     plt.xlabel('Time')
     plt.ylabel('Index Value')
     plt.show()
@@ -268,11 +304,11 @@ medium_term = wine_test.shape[0] + 12*5 # 5 years
 long_term = wine_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
 
 # Short, medium and long term forecasts
-ref_start = "2023-12-31"
+ref_start = wine_df_decomp.observed.index[-1] # "2023-12-31"
 end_short = "2024-12-31"
 end_medium = "2028-12-31"
 end_long = "2037-06-30"
-forecast_SARIMA_wine(wine_df_decomp.observed, wine_train, wine_test, long_term, "Long", end_date=end_long)
+# forecast_SARIMA_wine(wine_df_decomp.observed, wine_train, wine_test, long_term, "Long", end_date=end_long)
 
 # WATCH INDEX DATA FORECASTING
 # Split data into train and test
@@ -285,16 +321,43 @@ watch_test = watch_df_decomp.observed[int(0.8*len(watch_df_decomp.observed)):]
 # Test (S)ARIMA model
 # test_SARIMA_watch(watch_test)
 
+# Now that model is trained + evaluated, use it to forecast
+short_term = watch_test.shape[0] + 12 # 1 year
+medium_term = watch_test.shape[0] + 12*5 # 5 years
+long_term = watch_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
+
+# Short, medium and long term forecasts
+ref_start = watch_df_decomp.observed.index[-1] # "2023-12-01"
+end_short = "2024-12-01"
+end_medium = "2028-12-01"
+end_long = "2034-02-01"
+# forecast_SARIMA_watch(watch_df_decomp.observed, watch_train, watch_test, long_term, "Long", end_date=end_long)
+
 # ART INDEX DATA FORECASTING
 # Split data into train and test
 art_train = art_dfdecomp.observed[:int(0.8*len(art_dfdecomp.observed))]
 art_test = art_dfdecomp.observed[int(0.8*len(art_dfdecomp.observed)):]
+
+print(art_dfdecomp.observed.index[0])
+print(art_dfdecomp.observed.index[-1])
 
 # Create (S)ARIMA model
 # create_SARIMA_art(art_train) # Only run once
 
 # Test (S)ARIMA model
 # test_SARIMA_art(art_test)
+
+# Now that model is trained + evaluated, use it to forecast
+short_term = art_test.shape[0] + 12 # 1 year
+medium_term = art_test.shape[0] + 12*5 # 5 years
+long_term = art_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
+
+# Short, medium and long term forecasts
+ref_start = art_dfdecomp.observed.index[-1] # "2023-09-01"
+end_short = "2024-09-01"
+end_medium = "2028-09-01"
+end_long = "2051-02-01"
+# forecast_SARIMA_art(art_dfdecomp.observed, art_train, art_test, long_term, "Long", end_date=end_long)
       
 ##### VISUALIZATION PLOTS #####
 
