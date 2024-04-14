@@ -338,7 +338,7 @@ art_test = art_dfdecomp.observed[int(0.8*len(art_dfdecomp.observed)):]
 # create_SARIMA_art(art_train) # Only run once
 
 # Test (S)ARIMA model
-# test_SARIMA_art(art_test)
+test_SARIMA_art(art_test)
 
 # Now that model is trained + evaluated, use it to forecast
 short_term = art_test.shape[0] + 12 # 1 year
