@@ -9,7 +9,6 @@ from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.arima.model import ARIMAResults
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
-# TODO : Now make general short, medium and long term forecasts for each asset
 # TODO : Justify the choice of SARIMA parameters for each asset in the report
 
 ##### PREPROCESSING #####
@@ -105,7 +104,7 @@ def forecast_SARIMA_wine(wine_data, wine_train, wine_test, forecast_steps, lengt
     
 
 def create_SARIMA_watch(watch_train):
-    model = ARIMA(np.log(watch_train), trend='n', order=(1,1,0), # MA here does not change anything as expected
+    model = ARIMA(watch_train, trend='n', order=(1,1,0), # MA here does not change anything as expected
             enforce_stationarity=True,
             enforce_invertibility=False, # This param inverts the fit and makes us hover just above baseline
             seasonal_order=(0,1,1,35)) # A large seasonal order to capture subtle seasonality and complex pattern of the data.
@@ -121,7 +120,7 @@ def test_SARIMA_watch(watch_test): # Testing data
     forecast_steps = watch_test.shape[0]
     forecast = watch_model.get_forecast(steps=forecast_steps)
     forecast_ci = forecast.conf_int()
-    yhat_test = np.exp(forecast.predicted_mean).values # Apply the exp transformation if you used log transform before to invert scales back
+    yhat_test = forecast.predicted_mean.values # Apply the exp transformation if you used log transform before to invert scales back
 
     y_test = watch_test
     baseline = np.full(len(y_test), y_test[0])
@@ -157,13 +156,10 @@ def forecast_SARIMA_watch(watch_data, watch_train, watch_test, forecast_steps, l
     watch_model = ARIMAResults.load('models\watch_sarima.pkl')
     forecast = watch_model.get_forecast(steps=forecast_steps)
     forecast_ci = forecast.conf_int()
-    yhat = np.exp(forecast.predicted_mean).values # Apply the exp transformation if you used log transform during fit before to invert scales back
+    yhat = forecast.predicted_mean.values # Apply the exp transformation if you used log transform during fit before to invert scales back
 
     x_axis = pd.date_range(start=watch_data.index[0], end=watch_data.index[-1], freq = 'MS')
     x_axis_forecast = pd.date_range(start=watch_test.index[0], end = end_date, freq = 'MS')
-
-    print(len(x_axis_forecast))
-    print(len(yhat))
 
     plt.plot(x_axis, watch_data.values, color="blue", label="observed data")
     plt.plot(x_axis_forecast, yhat, color="red", label="forecast", linestyle="--")
@@ -337,9 +333,6 @@ end_long = "2034-02-01"
 # Split data into train and test
 art_train = art_dfdecomp.observed[:int(0.8*len(art_dfdecomp.observed))]
 art_test = art_dfdecomp.observed[int(0.8*len(art_dfdecomp.observed)):]
-
-print(art_dfdecomp.observed.index[0])
-print(art_dfdecomp.observed.index[-1])
 
 # Create (S)ARIMA model
 # create_SARIMA_art(art_train) # Only run once
