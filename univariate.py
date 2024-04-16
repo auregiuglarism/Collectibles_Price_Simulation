@@ -10,6 +10,16 @@ from statsmodels.tsa.arima.model import ARIMAResults
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 # TODO : Justify the choice of SARIMA parameters for each asset in the report
+# TODO : Continue Fine-tuning Parameters
+
+# Links to understand more about SARIMA Parameters : 
+
+# https://en.wikipedia.org/wiki/Box%E2%80%93Jenkins_method
+# https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average
+# Paper to cite : https://otexts.com/fpp2/non-seasonal-arima.html#acf-and-pacf-plots
+
+# https://medium.com/latinxinai/time-series-forecasting-arima-and-sarima-450fb18a9941
+
 
 ##### PREPROCESSING #####
 
@@ -36,7 +46,7 @@ def is_stationary_with_KPSS(data, significance_level=0.05):
 ##### MODELS #####
 
 def create_SARIMA_wine(wine_train):
-    model = ARIMA(wine_train, trend='n', order=(1,1,0),  # MA here does not change anything as expected
+    model = ARIMA(wine_train, trend='n', order=(5,1,5),  # MA here does not change anything as expected
             enforce_stationarity=True,
             enforce_invertibility=False, # this param inverts the fit which isn't good for our data
             seasonal_order=(0,1,1,53)) # A large seasonal order to account to capture subtle seasonality and complex pattern of the data.
@@ -304,7 +314,7 @@ ref_start = wine_df_decomp.observed.index[-1] # "2023-12-31"
 end_short = "2024-12-31"
 end_medium = "2028-12-31"
 end_long = "2037-06-30"
-# forecast_SARIMA_wine(wine_df_decomp.observed, wine_train, wine_test, long_term, "Long", end_date=end_long)
+forecast_SARIMA_wine(wine_df_decomp.observed, wine_train, wine_test, long_term, "Long", end_date=end_long)
 
 # WATCH INDEX DATA FORECASTING
 # Split data into train and test
@@ -338,7 +348,7 @@ art_test = art_dfdecomp.observed[int(0.8*len(art_dfdecomp.observed)):]
 # create_SARIMA_art(art_train) # Only run once
 
 # Test (S)ARIMA model
-test_SARIMA_art(art_test)
+# test_SARIMA_art(art_test)
 
 # Now that model is trained + evaluated, use it to forecast
 short_term = art_test.shape[0] + 12 # 1 year
