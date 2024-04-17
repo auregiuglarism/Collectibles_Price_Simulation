@@ -19,7 +19,8 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 # Paper to cite : https://otexts.com/fpp2/non-seasonal-arima.html#acf-and-pacf-plots
 
 # https://medium.com/latinxinai/time-series-forecasting-arima-and-sarima-450fb18a9941
-
+# https://neptune.ai/blog/arima-sarima-real-world-time-series-forecasting-guide
+# https://towardsdev.com/time-series-forecasting-part-5-cb2967f18164
 
 ##### PREPROCESSING #####
 
