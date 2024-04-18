@@ -46,18 +46,38 @@ def is_stationary_with_KPSS(data, significance_level=0.05):
 
 ##### MODELS #####
 
-def create_SARIMA_wine(wine_train):
-    model = ARIMA(wine_train, trend='n', order=(5,1,5),  # MA here does not change anything as expected
+def create_ARIMA_wine(wine_train, order):
+    model = ARIMA(wine_train, trend='n', order=order,  
             enforce_stationarity=True,
-            enforce_invertibility=False, # this param inverts the fit which isn't good for our data
-            seasonal_order=(0,1,1,53)) # A large seasonal order to account to capture subtle seasonality and complex pattern of the data.
-
+            enforce_invertibility=False) 
+            
     fit_results = model.fit()
-    print(fit_results.summary())
-    fit_results.save('models\wine_sarima.pkl')
+    # print(fit_results.summary()) # Comment this when evaluating multiple models
+    
+    # fit_results.save('models\wine_arima.pkl') # Comment this when evaluating multiple models
+    return fit_results
 
-def test_SARIMA_wine(wine_test): # Testing data
-    wine_model = ARIMAResults.load('models\wine_sarima.pkl')
+def evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, candidates, eval_df,): 
+    # Take the model with the lowest eval metrics and errors
+    for candidate in candidates:
+        # Fit candidate model
+        cd_fit_results = create_ARIMA_wine(wine_train, candidate) 
+            
+        # Test candidate model on test set
+        cd_mae, cd_mse, mae_bas, mse_bas, mae_mean, mse_mean = test_ARIMA_wine(wine_test, cd_fit_results)
+
+        # Store evaluation information
+        eval_df.loc[len(eval_df)] = [candidate, cd_fit_results.aic, cd_fit_results.bic, cd_mae, cd_mse]
+        print("MAE Baseline:", mae_bas)
+        print("MSE Baseline:", mse_bas)
+        print("MAE Mean:", mae_mean)
+        print("MSE Mean:", mse_mean)
+        
+    return eval_df
+
+def test_ARIMA_wine(wine_test, wine_model=None): # Testing data
+    if wine_model == None:
+        wine_model = ARIMAResults.load('models\wine_arima.pkl')
 
     # Testing Forecast
     forecast_steps = wine_test.shape[0]
@@ -76,28 +96,29 @@ def test_SARIMA_wine(wine_test): # Testing data
     mse_baseline = mean_squared_error(y_test, baseline)
     mae_baseline_mean = mean_absolute_error(y_test, baseline_mean)
     mse_baseline_mean = mean_squared_error(y_test, baseline_mean)
-    print("WINE MAE SARIMA (test): {:0.1f}".format(mae))
-    print("WINE MSE SARIMA (test): {:0.1f}".format(mse))
-    print("WINE MAE Baseline (test): {:0.1f}".format(mae_baseline))
-    print("WINE MSE Baseline (test): {:0.1f}".format(mse_baseline))
-    print("WINE MAE Baseline Mean (test): {:0.1f}".format(mae_baseline_mean))
-    print("WINE MSE Baseline Mean (test): {:0.1f}".format(mse_baseline_mean))
-
+    # print("WINE MAE ARIMA (test): {:0.1f}".format(mae)) # Comment this when evaluating multiple models
+    # print("WINE MSE ARIMA (test): {:0.1f}".format(mse)) # Comment this when evaluating multiple models
+    # print("WINE MAE Baseline (test): {:0.1f}".format(mae_baseline)) # Comment this when evaluating multiple models
+    # print("WINE MSE Baseline (test): {:0.1f}".format(mse_baseline)) # Comment this when evaluating multiple models
+    # print("WINE MAE Baseline Mean (test): {:0.1f}".format(mae_baseline_mean)) # Comment this when evaluating multiple models
+    # print("WINE MSE Baseline Mean (test): {:0.1f}".format(mse_baseline_mean)) # Comment this when evaluating multiple models
 
     # Plot the results
-    plt.plot(yhat_test, color="green", label="predicted")
-    plt.plot(y_test, color="blue", label="observed")
-    plt.plot(baseline, color="red", label="baseline")
-    plt.plot(baseline_mean, color="purple", label="mean")
-    plt.legend(loc='best')
-    plt.title('Compare Forecasted and Observed Wine Index Values for Test Set')
-    plt.xticks([0, len(y_test)/2, len(y_test)-1])
-    plt.xlabel('Time')
-    plt.ylabel('Index Value')
-    plt.show()
+    # plt.plot(yhat_test, color="green", label="predicted") # Comment this when evaluating multiple models
+    # plt.plot(y_test, color="blue", label="observed") # Comment this when evaluating multiple models
+    # plt.plot(baseline, color="red", label="baseline") # Comment this when evaluating multiple models 
+    # plt.plot(baseline_mean, color="purple", label="mean") # Comment this when evaluating multiple models 
+    # plt.legend(loc='best') # Comment this when evaluating multiple models
+    # plt.title('Compare Forecasted and Observed Wine Index Values for Test Set') # Comment this when evaluating multiple models
+    # plt.xticks([0, len(y_test)/2, len(y_test)-1]) # Comment this when evaluating multiple models 
+    # plt.xlabel('Time') # Comment this when evaluating multiple models 
+    # plt.ylabel('Index Value') # Comment this when evaluating multiple models
+    # plt.show() # Comment this when evaluating multiple models
 
-def forecast_SARIMA_wine(wine_data, wine_train, wine_test, forecast_steps, length, end_date):
-    wine_model = ARIMAResults.load('models\wine_sarima.pkl')
+    return mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean
+
+def forecast_ARIMA_wine(wine_data, wine_train, wine_test, forecast_steps, length, end_date):
+    wine_model = ARIMAResults.load('models\wine_arima.pkl')
     forecast = wine_model.get_forecast(steps=forecast_steps)
     forecast_ci = forecast.conf_int()
     yhat = forecast.predicted_mean.values # Apply the exp transformation if you used log transform during fit before to invert scales back
@@ -114,7 +135,7 @@ def forecast_SARIMA_wine(wine_data, wine_train, wine_test, forecast_steps, lengt
     plt.show()
     
 
-def create_SARIMA_watch(watch_train):
+def create_ARIMA_watch(watch_train):
     model = ARIMA(watch_train, trend='n', order=(1,1,0), # MA here does not change anything as expected
             enforce_stationarity=True,
             enforce_invertibility=False, # This param inverts the fit and makes us hover just above baseline
@@ -122,10 +143,10 @@ def create_SARIMA_watch(watch_train):
 
     fit_results = model.fit()
     print(fit_results.summary())
-    fit_results.save('models\watch_sarima.pkl')
+    fit_results.save('models\watch_arima.pkl')
 
-def test_SARIMA_watch(watch_test): # Testing data
-    watch_model = ARIMAResults.load('models\watch_sarima.pkl')
+def test_ARIMA_watch(watch_test): # Testing data
+    watch_model = ARIMAResults.load('models\watch_arima.pkl')
 
     # Testing Forecast
     forecast_steps = watch_test.shape[0]
@@ -144,8 +165,8 @@ def test_SARIMA_watch(watch_test): # Testing data
     mse_baseline = mean_squared_error(y_test, baseline)
     mae_baseline_mean = mean_absolute_error(y_test, baseline_mean)
     mse_baseline_mean = mean_squared_error(y_test, baseline_mean)
-    print("WATCH MAE SARIMA (test): {:0.1f}".format(mae))
-    print("WATCH MSE SARIMA (test): {:0.1f}".format(mse))
+    print("WATCH MAE ARIMA (test): {:0.1f}".format(mae))
+    print("WATCH MSE ARIMA (test): {:0.1f}".format(mse))
     print("WATCH MAE Baseline (test): {:0.1f}".format(mae_baseline))
     print("WATCH MSE Baseline (test): {:0.1f}".format(mse_baseline))
     print("WATCH MAE Baseline Mean (test): {:0.1f}".format(mae_baseline_mean))
@@ -163,8 +184,8 @@ def test_SARIMA_watch(watch_test): # Testing data
     plt.ylabel('Index Value')
     plt.show()
 
-def forecast_SARIMA_watch(watch_data, watch_train, watch_test, forecast_steps, length, end_date):
-    watch_model = ARIMAResults.load('models\watch_sarima.pkl')
+def forecast_ARIMA_watch(watch_data, watch_train, watch_test, forecast_steps, length, end_date):
+    watch_model = ARIMAResults.load('models\watch_arima.pkl')
     forecast = watch_model.get_forecast(steps=forecast_steps)
     forecast_ci = forecast.conf_int()
     yhat = forecast.predicted_mean.values # Apply the exp transformation if you used log transform during fit before to invert scales back
@@ -180,7 +201,7 @@ def forecast_SARIMA_watch(watch_data, watch_train, watch_test, forecast_steps, l
     plt.ylabel('Index Value')
     plt.show()
 
-def create_SARIMA_art(art_train):
+def create_ARIMA_art(art_train):
     model = ARIMA(art_train, trend='n', order=(1,1,1), # Correlogram indicates the need for MA and AR.
             enforce_stationarity=True, 
             enforce_invertibility=True, # Invertibility is necessary since the MA component is active
@@ -188,10 +209,10 @@ def create_SARIMA_art(art_train):
     
     fit_results = model.fit()
     print(fit_results.summary())
-    fit_results.save(f"models/art_sarima.pkl")
+    fit_results.save(f"models/art_arima.pkl")
 
-def test_SARIMA_art(art_test): # Testing data
-    art_model = ARIMAResults.load(f'models/art_sarima.pkl')
+def test_ARIMA_art(art_test): # Testing data
+    art_model = ARIMAResults.load(f'models/art_arima.pkl')
 
     forecast_steps = art_test.shape[0]
     forecast = art_model.get_forecast(steps=forecast_steps)
@@ -209,8 +230,8 @@ def test_SARIMA_art(art_test): # Testing data
     mse_baseline = mean_squared_error(y_test, baseline)
     mae_baseline_mean = mean_absolute_error(y_test, baseline_mean)
     mse_baseline_mean = mean_squared_error(y_test, baseline_mean)
-    print("ART MAE SARIMA (test): {:0.1f}".format(mae))
-    print("ART MSE SARIMA (test): {:0.1f}".format(mse))
+    print("ART MAE ARIMA (test): {:0.1f}".format(mae))
+    print("ART MSE ARIMA (test): {:0.1f}".format(mse))
     print("ART MAE Baseline (test): {:0.1f}".format(mae_baseline))
     print("ART MSE Baseline (test): {:0.1f}".format(mse_baseline))
     print("ART MAE Baseline Mean (test): {:0.1f}".format(mae_baseline_mean))
@@ -228,8 +249,8 @@ def test_SARIMA_art(art_test): # Testing data
     plt.ylabel('Index Value')
     plt.show()
 
-def forecast_SARIMA_art(art_data, art_train, art_test, forecast_steps, length, end_date):
-    art_model = ARIMAResults.load(f'models/art_sarima.pkl')
+def forecast_ARIMA_art(art_data, art_train, art_test, forecast_steps, length, end_date):
+    art_model = ARIMAResults.load(f'models/art_arima.pkl')
     forecast = art_model.get_forecast(steps=forecast_steps)
     forecast_ci = forecast.conf_int()
     yhat = forecast.predicted_mean.values # Apply the exp transformation if you used log transform during fit before to invert scales back
@@ -252,7 +273,7 @@ def forecast_SARIMA_art(art_data, art_train, art_test, forecast_steps, length, e
 # Data is adjusted for inflation and decomposed into trend, seasonality and residuals
 wine_df_decomp, watch_df_decomp, art_dfdecomp = preprocessing.main(univariate=True)
 
-## Evaluating stationarity and the (S)ARIMA Parameters ##
+## Evaluating stationarity and the ARIMA Parameters ##
 
 # # Data is non-stationary, so we apply first order differencing
 # wine_df_diff = wine_df_decomp.observed.diff().dropna()
@@ -287,25 +308,38 @@ wine_df_decomp, watch_df_decomp, art_dfdecomp = preprocessing.main(univariate=Tr
 # stationary = is_stationary_with_ADF(art_df_diff, significance_level=0.05)
 # print(f"Is the data stationary according to the ADF Test? {stationary}") # True
 
-## SARIMA (p,q,d)*(P,D,Q) Model Forecasting ##
+## SARIMA (p,d,q) Model Forecasting ##
 
-# The significant lags in the ACF and PACF at lag 1 indicate the need for AR in all three assets.
-# In the ART index, there are some significant lags at multiple intervals indicating the need for MA as well
-# The ARIMA model will be (1,1,0) for the Wine and Watch indices and (1,1,1) for the Art index
-# First order differencing makes the data stationary so I will set my d = 1
+# First order differencing makes the data stationary so I will set my d = 1 as confirmed by ADF + KPSS tests
 
 # WINE INDEX DATA FORECASTING
 # Split data into train and test
 wine_train = wine_df_decomp.observed[:int(0.8*len(wine_df_decomp.observed))]
 wine_test = wine_df_decomp.observed[int(0.8*len(wine_df_decomp.observed)):]
+eval_df = pd.DataFrame(columns=["ARIMA", "AIC", "BIC", "MAE", "MSE"]) # To store the most important evaluation metrics
 
-# Create (S)ARIMA model
-# create_SARIMA_wine(wine_train) # Only run once
+# Evaluate Wine ARIMA model with ACF + PACF plots
+# Candidates are chosen based on the ACF and PACF plots
+candidates = [(17,1,0), (3,1,0), (0,1,20), (0,1,12), (0,1,3), (17,1,20)]
+eval_df = evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, candidates, eval_df)
+print(eval_df)
 
-# Test (S)ARIMA model
-# test_SARIMA_wine(wine_test)
+# Best model seems to be (17,1,0) if we want a simpler model 
+# (17,1,20) is the best in terms of MAE and MSE, but it is more complex and thus penalized by AIC and BIC
+# We still do manage to be better than the baseline and the mean so this at least one success
 
-# Now that model is trained + evaluated, use it to forecast
+# However this suggests that the optimal cannot be precisely determined by the ACF and PACF plots 
+# Because in this case, both the MA and AR components are active, i.e p,q > 0
+# Thus we need to look at the residuals and the Box-Jenkins model diagnostic to determine the optimal model 
+
+# Evaluate Wine ARIMA model with Box-Jenkins model diagnostic
+# Starting point : previous best model (17,1,20)
+start_cd = (17,1,20)
+
+# Create optimal ARIMA model
+# create_ARIMA_wine(wine_train, eval_df, optimal) # Only run once to save the optimal model
+
+# Now that the optimal has been found, use it to forecast
 short_term = wine_test.shape[0] + 12 # 1 year
 medium_term = wine_test.shape[0] + 12*5 # 5 years
 long_term = wine_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
@@ -315,18 +349,18 @@ ref_start = wine_df_decomp.observed.index[-1] # "2023-12-31"
 end_short = "2024-12-31"
 end_medium = "2028-12-31"
 end_long = "2037-06-30"
-forecast_SARIMA_wine(wine_df_decomp.observed, wine_train, wine_test, long_term, "Long", end_date=end_long)
+# forecast_ARIMA_wine(wine_df_decomp.observed, wine_train, wine_test, long_term, "Long", end_date=end_long)
 
 # WATCH INDEX DATA FORECASTING
 # Split data into train and test
 watch_train = watch_df_decomp.observed[:int(0.8*len(watch_df_decomp.observed))]
 watch_test = watch_df_decomp.observed[int(0.8*len(watch_df_decomp.observed)):]
 
-# Create (S)ARIMA model
-# create_SARIMA_watch(watch_train) # Only run once
+# Create ARIMA model
+# create_ARIMA_watch(watch_train) # Only run once
 
-# Test (S)ARIMA model
-# test_SARIMA_watch(watch_test)
+# Test ARIMA model
+# test_ARIMA_watch(watch_test)
 
 # Now that model is trained + evaluated, use it to forecast
 short_term = watch_test.shape[0] + 12 # 1 year
@@ -338,18 +372,18 @@ ref_start = watch_df_decomp.observed.index[-1] # "2023-12-01"
 end_short = "2024-12-01"
 end_medium = "2028-12-01"
 end_long = "2034-02-01"
-# forecast_SARIMA_watch(watch_df_decomp.observed, watch_train, watch_test, long_term, "Long", end_date=end_long)
+# forecast_ARIMA_watch(watch_df_decomp.observed, watch_train, watch_test, long_term, "Long", end_date=end_long)
 
 # ART INDEX DATA FORECASTING
 # Split data into train and test
 art_train = art_dfdecomp.observed[:int(0.8*len(art_dfdecomp.observed))]
 art_test = art_dfdecomp.observed[int(0.8*len(art_dfdecomp.observed)):]
 
-# Create (S)ARIMA model
-# create_SARIMA_art(art_train) # Only run once
+# Create ARIMA model
+# create_ARIMA_art(art_train) # Only run once
 
-# Test (S)ARIMA model
-# test_SARIMA_art(art_test)
+# Test ARIMA model
+# test_ARIMA_art(art_test)
 
 # Now that model is trained + evaluated, use it to forecast
 short_term = art_test.shape[0] + 12 # 1 year
@@ -361,7 +395,7 @@ ref_start = art_dfdecomp.observed.index[-1] # "2023-09-01"
 end_short = "2024-09-01"
 end_medium = "2028-09-01"
 end_long = "2051-02-01"
-# forecast_SARIMA_art(art_dfdecomp.observed, art_train, art_test, long_term, "Long", end_date=end_long)
+# forecast_ARIMA_art(art_dfdecomp.observed, art_train, art_test, long_term, "Long", end_date=end_long)
       
 ##### VISUALIZATION PLOTS #####
 
