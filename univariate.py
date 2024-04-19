@@ -8,19 +8,21 @@ from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.arima.model import ARIMAResults
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+import statsmodels.api as sm
 
 # TODO : Justify the choice of SARIMA parameters for each asset in the report
 # TODO : Continue Fine-tuning Parameters
 
 # Links to understand more about SARIMA Parameters : 
 
-# https://en.wikipedia.org/wiki/Box%E2%80%93Jenkins_method
+# https://en.wikipedia.org/w<iki/Box%E2%80%93Jenkins_method
 # https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average
 # Paper to cite : https://otexts.com/fpp2/non-seasonal-arima.html#acf-and-pacf-plots
 
 # https://medium.com/latinxinai/time-series-forecasting-arima-and-sarima-450fb18a9941
 # https://neptune.ai/blog/arima-sarima-real-world-time-series-forecasting-guide
 # https://towardsdev.com/time-series-forecasting-part-5-cb2967f18164
+# https://www.geeksforgeeks.org/box-jenkins-methodology-for-arima-models/
 
 ##### PREPROCESSING #####
 
@@ -44,6 +46,15 @@ def is_stationary_with_KPSS(data, significance_level=0.05):
     print("Critical Values: \n", crit_values)
     return p_value > significance_level
 
+def is_white_noise_with_LjungBox(data, significance_level=0.05):
+    # We want to FAIL to reject the null hypothesis for the data to be white noise
+    # Null Hypothesis : The residuals are independently distributed
+    # Alternative Hypothesis : The residuals are not independently distributed
+    # If p-value < 0.05, reject the null hypothesis thus we want to see a p-value > 0.05
+    df_ljungbox = sm.stats.acorr_ljungbox(data, lags=[50], return_df=True)
+    print(df_ljungbox)
+    return df_ljungbox.loc[50,"lb_pvalue"] > significance_level
+    
 ##### MODELS #####
 
 def create_ARIMA_wine(wine_train, order):
@@ -56,24 +67,6 @@ def create_ARIMA_wine(wine_train, order):
     
     # fit_results.save('models\wine_arima.pkl') # Comment this when evaluating multiple models
     return fit_results
-
-def evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, candidates, eval_df,): 
-    # Take the model with the lowest eval metrics and errors
-    for candidate in candidates:
-        # Fit candidate model
-        cd_fit_results = create_ARIMA_wine(wine_train, candidate) 
-            
-        # Test candidate model on test set
-        cd_mae, cd_mse, mae_bas, mse_bas, mae_mean, mse_mean = test_ARIMA_wine(wine_test, cd_fit_results)
-
-        # Store evaluation information
-        eval_df.loc[len(eval_df)] = [candidate, cd_fit_results.aic, cd_fit_results.bic, cd_mae, cd_mse]
-        print("MAE Baseline:", mae_bas)
-        print("MSE Baseline:", mse_bas)
-        print("MAE Mean:", mae_mean)
-        print("MSE Mean:", mse_mean)
-        
-    return eval_df
 
 def test_ARIMA_wine(wine_test, wine_model=None): # Testing data
     if wine_model == None:
@@ -115,7 +108,68 @@ def test_ARIMA_wine(wine_test, wine_model=None): # Testing data
     # plt.ylabel('Index Value') # Comment this when evaluating multiple models
     # plt.show() # Comment this when evaluating multiple models
 
-    return mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean
+    return yhat_test, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean
+
+def evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, candidates, eval_df,): 
+    # Take the model with the lowest eval metrics and errors
+    for candidate in candidates:
+        # Fit candidate model
+        cd_fit_results = create_ARIMA_wine(wine_train, candidate) 
+            
+        # Test candidate model on test set
+        _, cd_mae, cd_mse, mae_bas, mse_bas, mae_mean, mse_mean = test_ARIMA_wine(wine_test, cd_fit_results)
+
+        # Store evaluation information
+        eval_df.loc[len(eval_df)] = [candidate, cd_fit_results.aic, cd_fit_results.bic, cd_mae, cd_mse]
+        print("MAE Baseline:", mae_bas)
+        print("MSE Baseline:", mse_bas)
+        print("MAE Mean:", mae_mean)
+        print("MSE Mean:", mse_mean)
+        
+    return eval_df
+
+def evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df):
+    # Create ARIMA Model
+    start = start_cd[0]
+    fit_results = create_ARIMA_wine(wine_train, start)
+
+    # Test ARIMA Model
+    yhat_test, _, _, _, _, _, _ = test_ARIMA_wine(wine_test, fit_results)
+
+    # Get Evaluation Metrics for this model:
+    eval_df = evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, start_cd, eval_df)
+    print("Model Evaluation Metrics: \n", eval_df)
+
+    # Compute Residuals
+    y_test = wine_test
+    residuals = y_test - yhat_test
+
+    # Plot Residuals - Does it follow a white noise pattern ?
+    plt.plot(residuals, color="blue", label="residuals", linestyle=":")
+    plt.axhline(y=0, color='r', linestyle='--')
+    plt.legend(loc='best')
+    plt.title('Model Residuals on Wine Index Test Set')
+    plt.xticks([0, len(residuals)/2, len(residuals)-1])
+    plt.xlabel('Time')
+    plt.ylabel('Residual Value')
+    plt.show()
+
+    # Check ACF and PACF of Residuals
+    fig = plot_acf(residuals, color = "blue", lags=50)
+    plt.title('Wine Index Model Residuals ACF 50 lags')
+    plt.show()
+
+    fig = plot_pacf(residuals, color = "green", lags=26) # PACF cannot be longer than 50% of the data
+    plt.title('Wine Index Model Residuals PACF 26 lags')
+    plt.show()
+
+    # Perform Ljung-Box Test on Residuals to test if they are white noise/independently distributed
+    # Null Hypothesis : The residuals are independently distributed
+    # Alternative Hypothesis : The residuals are not independently distributed
+    # If p-value < 0.05, reject the null hypothesis thus we want to see a p-value > 0.05
+
+    is_white_noise = is_white_noise_with_LjungBox(residuals, significance_level=0.05)
+    print(f"Are the residuals white noise? {is_white_noise}")
 
 def forecast_ARIMA_wine(wine_data, wine_train, wine_test, forecast_steps, length, end_date):
     wine_model = ARIMAResults.load('models\wine_arima.pkl')
@@ -320,9 +374,9 @@ eval_df = pd.DataFrame(columns=["ARIMA", "AIC", "BIC", "MAE", "MSE"]) # To store
 
 # Evaluate Wine ARIMA model with ACF + PACF plots
 # Candidates are chosen based on the ACF and PACF plots
-candidates = [(17,1,0), (3,1,0), (0,1,20), (0,1,12), (0,1,3), (17,1,20)]
-eval_df = evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, candidates, eval_df)
-print(eval_df)
+# candidates = [(17,1,0), (3,1,0), (0,1,20), (0,1,12), (0,1,3), (17,1,20)]
+# eval_df = evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, candidates, eval_df)
+# print(eval_df)
 
 # Best model seems to be (17,1,0) if we want a simpler model 
 # (17,1,20) is the best in terms of MAE and MSE, but it is more complex and thus penalized by AIC and BIC
@@ -334,7 +388,12 @@ print(eval_df)
 
 # Evaluate Wine ARIMA model with Box-Jenkins model diagnostic
 # Starting point : previous best model (17,1,20)
-start_cd = (17,1,20)
+start_cd = [(25,1,1)] 
+evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df)
+# The residual of this model (17,1,20) indicate a significant autocorrelation at lag 25 in the PACF
+# Thus I will try a model with (25,1,20) to see if we improve the performance
+# Best model yet : (25,1,1) or (50,1,1) but penalized by AIC and BIC for slightly better MAE and MSE
+
 
 # Create optimal ARIMA model
 # create_ARIMA_wine(wine_train, eval_df, optimal) # Only run once to save the optimal model
