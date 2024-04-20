@@ -57,20 +57,35 @@ def is_white_noise_with_LjungBox(data, significance_level=0.05):
     
 ##### MODELS #####
 
-def create_ARIMA_wine(wine_train, order):
-    model = ARIMA(wine_train, trend='n', order=order,  
+def create_ARIMA_wine(wine_train, order, seasonal_order=None):
+    if seasonal_order == None: # ARIMA Model
+        model = ARIMA(wine_train, trend='n', order=order,  
             enforce_stationarity=True,
-            enforce_invertibility=False) 
-            
-    fit_results = model.fit()
+            enforce_invertibility=True) 
+        
+        fit_results = model.fit()
+        fit_results.save('models\wine_arima.pkl') # Comment this when evaluating multiple models
+        
+
+    else: # SARIMA Model
+        model = ARIMA(wine_train, trend='n', order=order,  
+                enforce_stationarity=True,
+                enforce_invertibility=True,
+                seasonal_order=seasonal_order) 
+        
+        fit_results = model.fit()
+        fit_results.save('models\wine_sarima.pkl') # Comment this when evaluating multiple models
+
     # print(fit_results.summary()) # Comment this when evaluating multiple models
     
-    # fit_results.save('models\wine_arima.pkl') # Comment this when evaluating multiple models
     return fit_results
 
-def test_ARIMA_wine(wine_test, wine_model=None): # Testing data
-    if wine_model == None:
+def test_ARIMA_wine(wine_test, wine_model=None, seasonal=False): # Testing data
+    if wine_model == None and seasonal == False: # ARIMA Model
         wine_model = ARIMAResults.load('models\wine_arima.pkl')
+    
+    elif wine_model == None and seasonal == True: # SARIMA Model
+        wine_model = ARIMAResults.load('models\wine_sarima.pkl')
 
     # Testing Forecast
     forecast_steps = wine_test.shape[0]
@@ -97,47 +112,67 @@ def test_ARIMA_wine(wine_test, wine_model=None): # Testing data
     # print("WINE MSE Baseline Mean (test): {:0.1f}".format(mse_baseline_mean)) # Comment this when evaluating multiple models
 
     # Plot the results
-    # plt.plot(yhat_test, color="green", label="predicted") # Comment this when evaluating multiple models
-    # plt.plot(y_test, color="blue", label="observed") # Comment this when evaluating multiple models
-    # plt.plot(baseline, color="red", label="baseline") # Comment this when evaluating multiple models 
-    # plt.plot(baseline_mean, color="purple", label="mean") # Comment this when evaluating multiple models 
-    # plt.legend(loc='best') # Comment this when evaluating multiple models
-    # plt.title('Compare Forecasted and Observed Wine Index Values for Test Set') # Comment this when evaluating multiple models
-    # plt.xticks([0, len(y_test)/2, len(y_test)-1]) # Comment this when evaluating multiple models 
-    # plt.xlabel('Time') # Comment this when evaluating multiple models 
-    # plt.ylabel('Index Value') # Comment this when evaluating multiple models
-    # plt.show() # Comment this when evaluating multiple models
+    plt.plot(yhat_test, color="green", label="predicted") # Comment this when evaluating multiple models
+    plt.plot(y_test, color="blue", label="observed") # Comment this when evaluating multiple models
+    plt.plot(baseline, color="red", label="baseline") # Comment this when evaluating multiple models 
+    plt.plot(baseline_mean, color="purple", label="mean") # Comment this when evaluating multiple models 
+    plt.legend(loc='best') # Comment this when evaluating multiple models
+    plt.title('Compare Forecasted and Observed Wine Index Values for Test Set') # Comment this when evaluating multiple models
+    plt.xticks([0, len(y_test)/2, len(y_test)-1]) # Comment this when evaluating multiple models 
+    plt.xlabel('Time') # Comment this when evaluating multiple models 
+    plt.ylabel('Index Value') # Comment this when evaluating multiple models
+    plt.show() # Comment this when evaluating multiple models
 
     return yhat_test, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean
 
-def evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, candidates, eval_df,): 
+def evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, candidates, eval_df, seasonal=False, seasonal_order=None): 
     # Take the model with the lowest eval metrics and errors
     for candidate in candidates:
-        # Fit candidate model
-        cd_fit_results = create_ARIMA_wine(wine_train, candidate) 
-            
-        # Test candidate model on test set
-        _, cd_mae, cd_mse, mae_bas, mse_bas, mae_mean, mse_mean = test_ARIMA_wine(wine_test, cd_fit_results)
+        if seasonal == False:
+            # Fit candidate model
+            cd_fit_results = create_ARIMA_wine(wine_train, candidate) 
+                
+            # Test candidate model on test set
+            _, cd_mae, cd_mse, mae_bas, mse_bas, mae_mean, mse_mean = test_ARIMA_wine(wine_test, cd_fit_results, seasonal=False)
 
-        # Store evaluation information
-        eval_df.loc[len(eval_df)] = [candidate, cd_fit_results.aic, cd_fit_results.bic, cd_mae, cd_mse]
-        print("MAE Baseline:", mae_bas)
-        print("MSE Baseline:", mse_bas)
-        print("MAE Mean:", mae_mean)
-        print("MSE Mean:", mse_mean)
+            # Store evaluation information
+            eval_df.loc[len(eval_df)] = [candidate, seasonal_order, cd_fit_results.aic, cd_fit_results.bic, cd_mae, cd_mse]
+            print("MAE Baseline:", mae_bas)
+            print("MSE Baseline:", mse_bas)
+            print("MAE Mean:", mae_mean)
+            print("MSE Mean:", mse_mean)
+
+        else:
+            cd_fit_results = ARIMAResults.load('models\wine_sarima.pkl')
+
+            # Test candidate model on test set
+            _, cd_mae, cd_mse, mae_bas, mse_bas, mae_mean, mse_mean = test_ARIMA_wine(wine_test, cd_fit_results, seasonal=True)
+
+            # Store evaluation information
+            eval_df.loc[len(eval_df)] = [candidate, seasonal_order, cd_fit_results.aic, cd_fit_results.bic, cd_mae, cd_mse]
+            print("MAE Baseline:", mae_bas)
+            print("MSE Baseline:", mse_bas)
+            print("MAE Mean:", mae_mean)
+            print("MSE Mean:", mse_mean)
         
     return eval_df
 
-def evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df):
-    # Create ARIMA Model
-    start = start_cd[0]
-    fit_results = create_ARIMA_wine(wine_train, start)
+def evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, seasonal_start_cd, eval_df, seasonal=False):
+    if seasonal == False:
+        # Create ARIMA Model
+        start = start_cd[0]
+        fit_results = create_ARIMA_wine(wine_train, start)
+    
+    else:
+        start = start_cd[0]
+        seasonal_start = seasonal_start_cd[0]
+        fit_results = create_ARIMA_wine(wine_train, start, seasonal_start)
 
     # Test ARIMA Model
     yhat_test, _, _, _, _, _, _ = test_ARIMA_wine(wine_test, fit_results)
 
     # Get Evaluation Metrics for this model:
-    eval_df = evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, start_cd, eval_df)
+    eval_df = evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, start_cd, eval_df, seasonal=True, seasonal_order=seasonal_start)
     print("Model Evaluation Metrics: \n", eval_df)
 
     # Compute Residuals
@@ -171,8 +206,12 @@ def evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df
     is_white_noise = is_white_noise_with_LjungBox(residuals, significance_level=0.05)
     print(f"Are the residuals white noise? {is_white_noise}")
 
-def forecast_ARIMA_wine(wine_data, wine_train, wine_test, forecast_steps, length, end_date):
-    wine_model = ARIMAResults.load('models\wine_arima.pkl')
+def forecast_ARIMA_wine(wine_data, wine_train, wine_test, forecast_steps, length, end_date, wine_model=None, seasonal=False):
+    if wine_model == None and seasonal == False: # ARIMA Model
+        wine_model = ARIMAResults.load('models\wine_arima.pkl')
+    elif wine_model == None and seasonal == True: # SARIMA Model
+        wine_model = ARIMAResults.load('models\wine_sarima.pkl')
+
     forecast = wine_model.get_forecast(steps=forecast_steps)
     forecast_ci = forecast.conf_int()
     yhat = forecast.predicted_mean.values # Apply the exp transformation if you used log transform during fit before to invert scales back
@@ -367,11 +406,12 @@ wine_df_decomp, watch_df_decomp, art_dfdecomp = preprocessing.main(univariate=Tr
 # First order differencing makes the data stationary so I will set my d = 1 as confirmed by ADF + KPSS tests
 
 # WINE INDEX DATA FORECASTING
-# Split data into train and test
+# Split data into train and test + apply log transformation to stabilize variance
 wine_train = wine_df_decomp.observed[:int(0.8*len(wine_df_decomp.observed))]
 wine_test = wine_df_decomp.observed[int(0.8*len(wine_df_decomp.observed)):]
-eval_df = pd.DataFrame(columns=["ARIMA", "AIC", "BIC", "MAE", "MSE"]) # To store the most important evaluation metrics
+eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE"]) # To store the most important evaluation metrics
 
+# Box Jenkins Methodology to determine the optimal ARIMA model
 # Evaluate Wine ARIMA model with ACF + PACF plots
 # Candidates are chosen based on the ACF and PACF plots
 # candidates = [(17,1,0), (3,1,0), (0,1,20), (0,1,12), (0,1,3), (17,1,20)]
@@ -389,14 +429,18 @@ eval_df = pd.DataFrame(columns=["ARIMA", "AIC", "BIC", "MAE", "MSE"]) # To store
 # Evaluate Wine ARIMA model with Box-Jenkins model diagnostic
 # Starting point : previous best model (17,1,20)
 start_cd = [(25,1,1)] 
-evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df)
+seasonal_start_cd = [(2,1,1,26)]
+evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, seasonal_start_cd, eval_df, seasonal=True)
 # The residual of this model (17,1,20) indicate a significant autocorrelation at lag 25 in the PACF
 # Thus I will try a model with (25,1,20) to see if we improve the performance
 # Best model yet : (25,1,1) or (50,1,1) but penalized by AIC and BIC for slightly better MAE and MSE
-
+# NB : Log-transformation improves the AIC (goodness of fit) and BIC (model complexity) a lot -1000 points
+# But it increases MAE and MSE error on the test set. This is a trade-off between goodness of fit and predictive power
 
 # Create optimal ARIMA model
-# create_ARIMA_wine(wine_train, eval_df, optimal) # Only run once to save the optimal model
+optimal = (25,1,1)
+# optimal_seasonal = (2,1,2,26)
+# wine_model = create_ARIMA_wine(wine_train, optimal) # Only run once to save the optimal model
 
 # Now that the optimal has been found, use it to forecast
 short_term = wine_test.shape[0] + 12 # 1 year
@@ -408,7 +452,7 @@ ref_start = wine_df_decomp.observed.index[-1] # "2023-12-31"
 end_short = "2024-12-31"
 end_medium = "2028-12-31"
 end_long = "2037-06-30"
-# forecast_ARIMA_wine(wine_df_decomp.observed, wine_train, wine_test, long_term, "Long", end_date=end_long)
+# forecast_ARIMA_wine(wine_df_decomp.observed, wine_train, wine_test, long_term, "Long", end_date=end_long, wine_model=None, seasonal=True)
 
 # WATCH INDEX DATA FORECASTING
 # Split data into train and test
