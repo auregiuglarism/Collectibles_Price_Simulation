@@ -46,14 +46,14 @@ def is_stationary_with_KPSS(data, significance_level=0.05):
     print("Critical Values: \n", crit_values)
     return p_value > significance_level
 
-def is_white_noise_with_LjungBox(data, significance_level=0.05):
+def is_white_noise_with_LjungBox(data, significance_level=0.05, lags=50):
     # We want to FAIL to reject the null hypothesis for the data to be white noise
     # Null Hypothesis : The residuals are independently distributed
     # Alternative Hypothesis : The residuals are not independently distributed
     # If p-value < 0.05, reject the null hypothesis thus we want to see a p-value > 0.05
-    df_ljungbox = sm.stats.acorr_ljungbox(data, lags=[50], return_df=True)
+    df_ljungbox = sm.stats.acorr_ljungbox(data, lags=[lags], return_df=True)
     print(df_ljungbox)
-    return df_ljungbox.loc[50,"lb_pvalue"] > significance_level
+    return df_ljungbox.loc[lags,"lb_pvalue"] > significance_level
     
 ##### MODELS #####
 
@@ -325,10 +325,11 @@ def evaluate_ARIMA_watch_with_Plots(watch_train, watch_test, candidates, eval_df
         
     return eval_df
 
-def evaluate_ARIMA_wine_with_BoxJenkins(watch_train, watch_test, start_cd, seasonal_start_cd, eval_df, seasonal=False):
+def evaluate_ARIMA_watch_with_BoxJenkins(watch_train, watch_test, start_cd, seasonal_start_cd, eval_df, seasonal=False):
     if seasonal == False:
         # Create ARIMA Model
         start = start_cd[0]
+        seasonal_start = None
         fit_results = create_ARIMA_watch(watch_train, start)
     
     else:
@@ -340,11 +341,11 @@ def evaluate_ARIMA_wine_with_BoxJenkins(watch_train, watch_test, start_cd, seaso
     yhat_test, _, _, _, _, _, _ = test_ARIMA_watch(watch_test, fit_results)
 
     # Get Evaluation Metrics for this model:
-    eval_df = evaluate_ARIMA_watch_with_Plots(watch_train, watch_test, start_cd, eval_df, seasonal=True, seasonal_order=seasonal_start)
+    eval_df = evaluate_ARIMA_watch_with_Plots(watch_train, watch_test, start_cd, eval_df, seasonal, seasonal_order=seasonal_start)
     print("Model Evaluation Metrics: \n", eval_df)
 
     # Compute Residuals
-    y_test = wine_test
+    y_test = watch_test
     residuals = y_test - yhat_test
 
     # Plot Residuals - Does it follow a white noise pattern ?
@@ -358,11 +359,11 @@ def evaluate_ARIMA_wine_with_BoxJenkins(watch_train, watch_test, start_cd, seaso
     plt.show()
 
     # Check ACF and PACF of Residuals
-    fig = plot_acf(residuals, color = "blue", lags=50)
+    fig = plot_acf(residuals, color = "blue", lags=41) # ACF cannot be longer than testing data.
     plt.title('Watch Index Model Residuals ACF 50 lags')
     plt.show()
 
-    fig = plot_pacf(residuals, color = "green", lags=26) # PACF cannot be longer than 50% of the data
+    fig = plot_pacf(residuals, color = "green", lags=20) # PACF cannot be longer than 50% of the data
     plt.title('Watch Index Model Residuals PACF 26 lags')
     plt.show()
 
@@ -371,11 +372,15 @@ def evaluate_ARIMA_wine_with_BoxJenkins(watch_train, watch_test, start_cd, seaso
     # Alternative Hypothesis : The residuals are not independently distributed
     # If p-value < 0.05, reject the null hypothesis thus we want to see a p-value > 0.05
 
-    is_white_noise = is_white_noise_with_LjungBox(residuals, significance_level=0.05)
+    is_white_noise = is_white_noise_with_LjungBox(residuals, significance_level=0.05, lags=41)
     print(f"Are the residuals white noise? {is_white_noise}")
 
-def forecast_ARIMA_watch(watch_data, watch_train, watch_test, forecast_steps, length, end_date):
-    watch_model = ARIMAResults.load('models\watch_arima.pkl')
+def forecast_ARIMA_watch(watch_data, watch_train, watch_test, forecast_steps, length, end_date, watch_model=None, seasonal=False):
+    if watch_model == None and seasonal == False: # ARIMA Model
+        watch_model = ARIMAResults.load('models\watch_arima.pkl')
+    elif watch_model == None and seasonal == True: # SARIMA Model
+        watch_model = ARIMAResults.load('models\watch_sarima.pkl')
+
     forecast = watch_model.get_forecast(steps=forecast_steps)
     forecast_ci = forecast.conf_int()
     yhat = forecast.predicted_mean.values # Apply the exp transformation if you used log transform during fit before to invert scales back
@@ -576,9 +581,21 @@ eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE"]
 # They are both penalized by the high AR order, however those with low AR order really are not good
 # Evaluate, what does log transformation do to the model?
 
+# Evaluate Wine ARIMA model with Box-Jenkins model diagnostic
+# Starting point : previous best model (37,1,6)
+start_cd = [(37,1,8)] 
+seasonal_start_cd = [(2,1,1,38)] # Seasonal order needs to be > to AR and MA order
+# evaluate_ARIMA_watch_with_BoxJenkins(watch_train, watch_test, start_cd, seasonal_start_cd, eval_df, seasonal=True)
+# The residual of this model exhibits a value of 0 at lag 8 in the ACF
+# Since this is the residual of the model, we want to take the residual closest to 0.
+
+# There are conflicting results: The ACF plot show that some of the autocorrelation has been captured
+# The residual analysis shows that its a bit closer to random noise
+# However it increased the test set error and model complexity.
+
 # Create optimal ARIMA model
-optimal = (37,1,6)
-optimal_seasonal = (1,1,1,42)
+optimal = ()
+optimal_seasonal = ()
 # create_ARIMA_watch(watch_train, optimal) # Only run once to save the optimal model
 # create_ARIMA_watch(watch_train, optimal, optimal_seasonal) # Only run once to save the optimal model
 
@@ -592,7 +609,7 @@ ref_start = watch_df_decomp.observed.index[-1] # "2023-12-01"
 end_short = "2024-12-01"
 end_medium = "2028-12-01"
 end_long = "2034-02-01"
-# forecast_ARIMA_watch(watch_df_decomp.observed, watch_train, watch_test, long_term, "Long", end_date=end_long)
+forecast_ARIMA_watch(watch_df_decomp.observed, watch_train, watch_test, long_term, "Long", end_date=end_long, watch_model=None, seasonal=True)
 
 # ART INDEX DATA FORECASTING
 # Split data into train and test
@@ -677,7 +694,7 @@ end_long = "2051-02-01"
 # plt.title('Wine Index ACF 50 lags')
 # plt.show()
 
-# fig = plot_acf(watch_df_diff, color = "blue", lags=50)
+# fig = plot_acf(watch_train, color = "blue", lags=50)
 # plt.title('Watch Index ACF 50 lags')
 # plt.show()  
 
