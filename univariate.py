@@ -66,7 +66,6 @@ def create_ARIMA_wine(wine_train, order, seasonal_order=None):
         fit_results = model.fit()
         fit_results.save('models\wine_arima.pkl') # Comment this when evaluating multiple models
         
-
     else: # SARIMA Model
         model = ARIMA(wine_train, trend='n', order=order,  
                 enforce_stationarity=True,
@@ -227,19 +226,34 @@ def forecast_ARIMA_wine(wine_data, wine_train, wine_test, forecast_steps, length
     plt.ylabel('Index Value')
     plt.show()
     
-
-def create_ARIMA_watch(watch_train):
-    model = ARIMA(watch_train, trend='n', order=(1,1,0), # MA here does not change anything as expected
+def create_ARIMA_watch(watch_train, order, seasonal_order=None):
+    if seasonal_order == None: # ARIMA Model
+        model = ARIMA(watch_train, trend='n', order=order,  
             enforce_stationarity=True,
-            enforce_invertibility=False, # This param inverts the fit and makes us hover just above baseline
-            seasonal_order=(0,1,1,35)) # A large seasonal order to capture subtle seasonality and complex pattern of the data.
+            enforce_invertibility=True) 
+        
+        fit_results = model.fit()
+        fit_results.save('models\watch_arima.pkl') # Comment this when evaluating multiple models
+        
+    else: # SARIMA Model
+        model = ARIMA(watch_train, trend='n', order=order,  
+                enforce_stationarity=True,
+                enforce_invertibility=True,
+                seasonal_order=seasonal_order) 
+        
+        fit_results = model.fit()
+        fit_results.save('models\watch_sarima.pkl') # Comment this when evaluating multiple models
 
-    fit_results = model.fit()
-    print(fit_results.summary())
-    fit_results.save('models\watch_arima.pkl')
+    # print(fit_results.summary()) # Comment this when evaluating multiple models
+    
+    return fit_results
 
-def test_ARIMA_watch(watch_test): # Testing data
-    watch_model = ARIMAResults.load('models\watch_arima.pkl')
+def test_ARIMA_watch(watch_test, watch_model=None, seasonal=False): # Testing data
+    if watch_model == None and seasonal == False: # ARIMA Model
+        watch_model = ARIMAResults.load('models\watch_arima.pkl')
+    
+    elif watch_model == None and seasonal == True: # SARIMA Model
+        watch_model = ARIMAResults.load('models\watch_sarima.pkl')
 
     # Testing Forecast
     forecast_steps = watch_test.shape[0]
@@ -258,12 +272,12 @@ def test_ARIMA_watch(watch_test): # Testing data
     mse_baseline = mean_squared_error(y_test, baseline)
     mae_baseline_mean = mean_absolute_error(y_test, baseline_mean)
     mse_baseline_mean = mean_squared_error(y_test, baseline_mean)
-    print("WATCH MAE ARIMA (test): {:0.1f}".format(mae))
-    print("WATCH MSE ARIMA (test): {:0.1f}".format(mse))
-    print("WATCH MAE Baseline (test): {:0.1f}".format(mae_baseline))
-    print("WATCH MSE Baseline (test): {:0.1f}".format(mse_baseline))
-    print("WATCH MAE Baseline Mean (test): {:0.1f}".format(mae_baseline_mean))
-    print("WATCH MSE Baseline Mean (test): {:0.1f}".format(mse_baseline_mean))
+    # print("WATCH MAE ARIMA (test): {:0.1f}".format(mae)) # Comment this when evaluating multiple models
+    # print("WATCH MSE ARIMA (test): {:0.1f}".format(mse)) # Comment this when evaluating multiple models
+    # print("WATCH MAE Baseline (test): {:0.1f}".format(mae_baseline)) # Comment this when evaluating multiple models
+    # print("WATCH MSE Baseline (test): {:0.1f}".format(mse_baseline)) # Comment this when evaluating multiple models
+    # print("WATCH MAE Baseline Mean (test): {:0.1f}".format(mae_baseline_mean)) # Comment this when evaluating multiple models
+    # print("WATCH MSE Baseline Mean (test): {:0.1f}".format(mse_baseline_mean)) # Comment this when evaluating multiple models
 
     # Plot the results
     plt.plot(yhat_test, color="green", label="predicted")
@@ -276,6 +290,89 @@ def test_ARIMA_watch(watch_test): # Testing data
     plt.xlabel('Time')
     plt.ylabel('Index Value')
     plt.show()
+
+    return yhat_test, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean
+
+def evaluate_ARIMA_watch_with_Plots(watch_train, watch_test, candidates, eval_df, seasonal=False, seasonal_order=None): 
+    # Take the model with the lowest eval metrics and errors
+    for candidate in candidates:
+        if seasonal == False:
+            # Fit candidate model
+            cd_fit_results = create_ARIMA_watch(watch_train, candidate) 
+                
+            # Test candidate model on test set
+            _, cd_mae, cd_mse, mae_bas, mse_bas, mae_mean, mse_mean = test_ARIMA_watch(watch_test, cd_fit_results, seasonal=False)
+
+            # Store evaluation information
+            eval_df.loc[len(eval_df)] = [candidate, seasonal_order, cd_fit_results.aic, cd_fit_results.bic, cd_mae, cd_mse]
+            print("MAE Baseline:", mae_bas)
+            print("MSE Baseline:", mse_bas)
+            print("MAE Mean:", mae_mean)
+            print("MSE Mean:", mse_mean)
+
+        else:
+            cd_fit_results = ARIMAResults.load('models\watch_sarima.pkl')
+
+            # Test candidate model on test set
+            _, cd_mae, cd_mse, mae_bas, mse_bas, mae_mean, mse_mean = test_ARIMA_watch(watch_test, cd_fit_results, seasonal=True)
+
+            # Store evaluation information
+            eval_df.loc[len(eval_df)] = [candidate, seasonal_order, cd_fit_results.aic, cd_fit_results.bic, cd_mae, cd_mse]
+            print("MAE Baseline:", mae_bas)
+            print("MSE Baseline:", mse_bas)
+            print("MAE Mean:", mae_mean)
+            print("MSE Mean:", mse_mean)
+        
+    return eval_df
+
+def evaluate_ARIMA_wine_with_BoxJenkins(watch_train, watch_test, start_cd, seasonal_start_cd, eval_df, seasonal=False):
+    if seasonal == False:
+        # Create ARIMA Model
+        start = start_cd[0]
+        fit_results = create_ARIMA_watch(watch_train, start)
+    
+    else:
+        start = start_cd[0]
+        seasonal_start = seasonal_start_cd[0]
+        fit_results = create_ARIMA_watch(watch_train, start, seasonal_start)
+
+    # Test ARIMA Model
+    yhat_test, _, _, _, _, _, _ = test_ARIMA_watch(watch_test, fit_results)
+
+    # Get Evaluation Metrics for this model:
+    eval_df = evaluate_ARIMA_watch_with_Plots(watch_train, watch_test, start_cd, eval_df, seasonal=True, seasonal_order=seasonal_start)
+    print("Model Evaluation Metrics: \n", eval_df)
+
+    # Compute Residuals
+    y_test = wine_test
+    residuals = y_test - yhat_test
+
+    # Plot Residuals - Does it follow a white noise pattern ?
+    plt.plot(residuals, color="blue", label="residuals", linestyle=":")
+    plt.axhline(y=0, color='r', linestyle='--')
+    plt.legend(loc='best')
+    plt.title('Model Residuals on Watch Index Test Set')
+    plt.xticks([0, len(residuals)/2, len(residuals)-1])
+    plt.xlabel('Time')
+    plt.ylabel('Residual Value')
+    plt.show()
+
+    # Check ACF and PACF of Residuals
+    fig = plot_acf(residuals, color = "blue", lags=50)
+    plt.title('Watch Index Model Residuals ACF 50 lags')
+    plt.show()
+
+    fig = plot_pacf(residuals, color = "green", lags=26) # PACF cannot be longer than 50% of the data
+    plt.title('Watch Index Model Residuals PACF 26 lags')
+    plt.show()
+
+    # Perform Ljung-Box Test on Residuals to test if they are white noise/independently distributed
+    # Null Hypothesis : The residuals are independently distributed
+    # Alternative Hypothesis : The residuals are not independently distributed
+    # If p-value < 0.05, reject the null hypothesis thus we want to see a p-value > 0.05
+
+    is_white_noise = is_white_noise_with_LjungBox(residuals, significance_level=0.05)
+    print(f"Are the residuals white noise? {is_white_noise}")
 
 def forecast_ARIMA_watch(watch_data, watch_train, watch_test, forecast_steps, length, end_date):
     watch_model = ARIMAResults.load('models\watch_arima.pkl')
@@ -405,8 +502,15 @@ wine_df_decomp, watch_df_decomp, art_dfdecomp = preprocessing.main(univariate=Tr
 
 # First order differencing makes the data stationary so I will set my d = 1 as confirmed by ADF + KPSS tests
 
+# Methodology : 
+# First determine a good ARIMA Model using the ACF and PACF Plots
+# Then use the Box-Jenkins Methodology to determine the optimal ARIMA model
+# Finally if there is an underlying complex seasonal pattern, use SARIMA to capture it
+# If it improves accuracy, then optimize the SARIMA model with the Box-Jenkins Methodology
+
 # WINE INDEX DATA FORECASTING
-# Split data into train and test + apply log transformation to stabilize variance
+
+# Split data into train and test
 wine_train = wine_df_decomp.observed[:int(0.8*len(wine_df_decomp.observed))]
 wine_test = wine_df_decomp.observed[int(0.8*len(wine_df_decomp.observed)):]
 eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE"]) # To store the most important evaluation metrics
@@ -429,8 +533,8 @@ eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE"]
 # Evaluate Wine ARIMA model with Box-Jenkins model diagnostic
 # Starting point : previous best model (17,1,20)
 start_cd = [(25,1,1)] 
-seasonal_start_cd = [(2,1,1,26)]
-evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, seasonal_start_cd, eval_df, seasonal=True)
+seasonal_start_cd = [(2,1,1,26)] # Seasonal order needs to be > to AR and MA order
+# evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, seasonal_start_cd, eval_df, seasonal=True)
 # The residual of this model (17,1,20) indicate a significant autocorrelation at lag 25 in the PACF
 # Thus I will try a model with (25,1,20) to see if we improve the performance
 # Best model yet : (25,1,1) or (50,1,1) but penalized by AIC and BIC for slightly better MAE and MSE
@@ -439,8 +543,9 @@ evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, seasonal_st
 
 # Create optimal ARIMA model
 optimal = (25,1,1)
-# optimal_seasonal = (2,1,2,26)
+optimal_seasonal = (2,1,1,26)
 # wine_model = create_ARIMA_wine(wine_train, optimal) # Only run once to save the optimal model
+# wine_model = create_ARIMA_wine(wine_train, optimal, optimal_seasonal) # Only run once to save the optimal model
 
 # Now that the optimal has been found, use it to forecast
 short_term = wine_test.shape[0] + 12 # 1 year
@@ -458,12 +563,24 @@ end_long = "2037-06-30"
 # Split data into train and test
 watch_train = watch_df_decomp.observed[:int(0.8*len(watch_df_decomp.observed))]
 watch_test = watch_df_decomp.observed[int(0.8*len(watch_df_decomp.observed)):]
+eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE"]) # To store the most important evaluation metrics
 
-# Create ARIMA model
-# create_ARIMA_watch(watch_train) # Only run once
+# Box Jenkins Methodology to determine the optimal ARIMA model
+# Evaluate Wine ARIMA model with ACF + PACF plots
+# Candidates are chosen based on the ACF and PACF plots
+# candidates = [(0,1,1), (0,1,6), (2,1,0), (37,1,0), (37,1,1), (37,1,6), (2,1,6), (2,1,1)]
+# eval_df = evaluate_ARIMA_watch_with_Plots(watch_train, watch_test, candidates, eval_df)
+# print(eval_df)
 
-# Test ARIMA model
-# test_ARIMA_watch(watch_test)
+# The best model seems to be (37,1,6) if we want a simpler model (37,1,0)
+# They are both penalized by the high AR order, however those with low AR order really are not good
+# Evaluate, what does log transformation do to the model?
+
+# Create optimal ARIMA model
+optimal = (37,1,6)
+optimal_seasonal = (1,1,1,42)
+# create_ARIMA_watch(watch_train, optimal) # Only run once to save the optimal model
+# create_ARIMA_watch(watch_train, optimal, optimal_seasonal) # Only run once to save the optimal model
 
 # Now that model is trained + evaluated, use it to forecast
 short_term = watch_test.shape[0] + 12 # 1 year
