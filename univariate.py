@@ -156,10 +156,11 @@ def evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, candidates, eval_df, s
         
     return eval_df
 
-def evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, seasonal_start_cd, eval_df, seasonal=False):
+def evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df, seasonal_start_cd, seasonal=False):
     if seasonal == False:
         # Create ARIMA Model
         start = start_cd[0]
+        seasonal_start = None
         fit_results = create_ARIMA_wine(wine_train, start)
     
     else:
@@ -171,7 +172,7 @@ def evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, seasona
     yhat_test, _, _, _, _, _, _ = test_ARIMA_wine(wine_test, fit_results)
 
     # Get Evaluation Metrics for this model:
-    eval_df = evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, start_cd, eval_df, seasonal=True, seasonal_order=seasonal_start)
+    eval_df = evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, start_cd, eval_df, seasonal, seasonal_order=seasonal_start)
     print("Model Evaluation Metrics: \n", eval_df)
 
     # Compute Residuals
@@ -468,23 +469,18 @@ def forecast_ARIMA_art(art_data, art_train, art_test, forecast_steps, length, en
 # Data is adjusted for inflation and decomposed into trend, seasonality and residuals
 wine_df_decomp, watch_df_decomp, art_dfdecomp = preprocessing.main(univariate=True)
 
-## Evaluating stationarity and the ARIMA Parameters ##
+## Evaluating stationarity of the data and the ARIMA Parameters ##
 
 # # Data is non-stationary, so we apply first order differencing
 # wine_df_diff = wine_df_decomp.observed.diff().dropna()
 # watch_df_diff = watch_df_decomp.observed.diff().dropna()
 # art_df_diff = art_dfdecomp.observed.diff().dropna()
 
-# # NB The data exhibits WAY better stationary after first order differencing
-# # Might need moving average to smoothen big spikes
-# wine_df_smooth = moving_average_smooth(wine_df_diff, 30).dropna() # First 30 days are NaN
-# watch_df_smooth = moving_average_smooth(watch_df_diff, 30).dropna() # First 30 days are NaN
-# art_df_smooth = moving_average_smooth(art_df_diff, 30).dropna() # First 30 days are NaN
-
+# NB The data exhibits WAY better stationary after first order differencing
 # Smoothing the data with a 30 day moving average messes (for some reason) the stationarity of the data.
 # Increasing the window size makes it worse.
 
-# Evaluating stationarity of the transformed (not smoothed) data using KPSS and ADF tests 
+# Evaluating stationarity of the data using KPSS and ADF tests 
 # Wine
 # stationary = is_stationary_with_KPSS(wine_df_diff, significance_level=0.05)
 # print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
@@ -503,21 +499,22 @@ wine_df_decomp, watch_df_decomp, art_dfdecomp = preprocessing.main(univariate=Tr
 # stationary = is_stationary_with_ADF(art_df_diff, significance_level=0.05)
 # print(f"Is the data stationary according to the ADF Test? {stationary}") # True
 
-## SARIMA (p,d,q) Model Forecasting ##
+## SARIMA (p,d,q)*(P,D,Q)**M Model Forecasting ##
 
 # First order differencing makes the data stationary so I will set my d = 1 as confirmed by ADF + KPSS tests
 
 # Methodology : 
 # First determine a good ARIMA Model using the ACF and PACF Plots
-# Then use the Box-Jenkins Methodology to determine the optimal ARIMA model
+# Then use the Box-Jenkins Methodology to determine the optimal ARIMA model by choosing an autocorrellation lag close to 0 for residuals
 # Finally if there is an underlying complex seasonal pattern, use SARIMA to capture it
-# If it improves accuracy, then optimize the SARIMA model with the Box-Jenkins Methodology
+# If it improves accuracy, then optimize the SARIMA model with the Box-Jenkins Methodology on the residual + seasonal component
 
 # WINE INDEX DATA FORECASTING
 
 # Split data into train and test
 wine_train = wine_df_decomp.observed[:int(0.8*len(wine_df_decomp.observed))]
 wine_test = wine_df_decomp.observed[int(0.8*len(wine_df_decomp.observed)):]
+wine_seasonal = wine_df_decomp.seasonal
 eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE"]) # To store the most important evaluation metrics
 
 # Box Jenkins Methodology to determine the optimal ARIMA model
@@ -536,19 +533,38 @@ eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE"]
 # Thus we need to look at the residuals and the Box-Jenkins model diagnostic to determine the optimal model 
 
 # Evaluate Wine ARIMA model with Box-Jenkins model diagnostic
-# Starting point : previous best model (17,1,20)
-start_cd = [(25,1,1)] 
-seasonal_start_cd = [(2,1,1,26)] # Seasonal order needs to be > to AR and MA order
-# evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, seasonal_start_cd, eval_df, seasonal=True)
-# The residual of this model (17,1,20) indicate a significant autocorrelation at lag 25 in the PACF
-# Thus I will try a model with (25,1,20) to see if we improve the performance
-# Best model yet : (25,1,1) or (50,1,1) but penalized by AIC and BIC for slightly better MAE and MSE
+# Starting point : previous best model (17,1,20) by combining previous best AR and MA orders
+start_cd = [(17,1,12)] 
+# evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df, seasonal_start_cd=None, seasonal=False)
+# The residual of this model (17,1,20) indicates a significant value of 0 at lag 12 in the ACF
+# As well as a significant value of 0 at lag 17 in the PACF which is a good sign telling us that the AR order is optimal
+# Thus I will try a model with (17,1,12) to see if we improve the performance
+# Best model yet : (17,1,12), (17,1,20) is more complex but does seem to have better performance
 # NB : Log-transformation improves the AIC (goodness of fit) and BIC (model complexity) a lot -1000 points
 # But it increases MAE and MSE error on the test set. This is a trade-off between goodness of fit and predictive power
 
+# Seasonal decomposition suggests underlying complex seasonal pattern so we will now optimize the SARIMA model
+
+# Evaluate Stationarity of the seasonal component 
+# stationary = is_stationary_with_KPSS(wine_seasonal, significance_level=0.05)
+# print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
+# stationary = is_stationary_with_ADF(wine_seasonal, significance_level=0.05)
+# print(f"Is the data stationary according to the ADF Test? {stationary}") # True
+# We can set our order D to 0 since the seasonal component is stationary
+
+# By looking at the ACF and PACF plots of the seasonal component, there is a significant lag at 13 but none beyond
+# in the PACF, thus we can set our seasonal AR order P to 13.
+# In the ACF, there is a significant lag at 71, but none beyond, thus we can set Q to 71.
+# However, 71 is a pretty big value, thus we can also set Q to 12, which is the maximum positive value for a lag
+# outside the significance region. Or 6 which is the maximum negative value for a lag outside the significance region.
+# The period in the ACF seems to repeat itself every 9 lags, thus we can set our M to be 9.
+# But we will put just above the AR and MA order of the ARIMA to avoid duplicate lags
+seasonal_start_cd = [(13,0,71,18)] # Seasonal order needs to be > to AR and MA order of ARIMA
+# evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df, seasonal_start_cd, seasonal=False)
+
 # Create optimal ARIMA model
-optimal = (25,1,1)
-optimal_seasonal = (2,1,1,26)
+optimal = start_cd[0]
+optimal_seasonal = seasonal_start_cd[0]
 # wine_model = create_ARIMA_wine(wine_train, optimal) # Only run once to save the optimal model
 # wine_model = create_ARIMA_wine(wine_train, optimal, optimal_seasonal) # Only run once to save the optimal model
 
@@ -581,7 +597,7 @@ eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE"]
 # They are both penalized by the high AR order, however those with low AR order really are not good
 # Evaluate, what does log transformation do to the model?
 
-# Evaluate Wine ARIMA model with Box-Jenkins model diagnostic
+# Evaluate Watch ARIMA model with Box-Jenkins model diagnostic
 # Starting point : previous best model (37,1,6)
 start_cd = [(37,1,8)] 
 seasonal_start_cd = [(2,1,1,38)] # Seasonal order needs to be > to AR and MA order
@@ -609,7 +625,7 @@ ref_start = watch_df_decomp.observed.index[-1] # "2023-12-01"
 end_short = "2024-12-01"
 end_medium = "2028-12-01"
 end_long = "2034-02-01"
-forecast_ARIMA_watch(watch_df_decomp.observed, watch_train, watch_test, long_term, "Long", end_date=end_long, watch_model=None, seasonal=True)
+#forecast_ARIMA_watch(watch_df_decomp.observed, watch_train, watch_test, long_term, "Long", end_date=end_long, watch_model=None, seasonal=True)
 
 # ART INDEX DATA FORECASTING
 # Split data into train and test
@@ -689,29 +705,69 @@ end_long = "2051-02-01"
 
 # Data is stationary after first order differencing
 
-# ## ACF and PACF plots to determine ARIMA parameters ##
-# fig = plot_acf(wine_df_diff, color = "blue", lags=50)
+# ## ACF and PACF plots to determine (S)ARIMA parameters ##
+# fig = plot_acf(wine_df_diff, color = "blue", lags=len(wine_df_diff)-1) # ACF cannot be longer than the data.
+# plt.title('Wine Index ACF 250+ lags')
+# plt.show()
+
+# fig = plot_acf(wine_df_diff, color = "blue", lags=50) # Plotting most interesting subset of the ACF
 # plt.title('Wine Index ACF 50 lags')
 # plt.show()
 
-# fig = plot_acf(watch_train, color = "blue", lags=50)
-# plt.title('Watch Index ACF 50 lags')
-# plt.show()  
-
-# fig = plot_acf(art_df_diff, color = "blue", lags=50)
-# plt.title('Art Index ACF 50 lags')
+# fig = plot_acf(watch_df_diff, color = "blue", lags=len(watch_df_diff)-1) # ACF cannot be longer than the data.
+# plt.title('Watch Index ACF 200+ lags')
 # plt.show()
 
-# fig = plot_pacf(wine_df_diff, color = "green", lags=50)
+# fig = plot_acf(watch_df_diff, color = "blue", lags=50) # Plotting most interesting subset of the ACF
+# plt.title('Watch Index ACF 50 lags')
+# plt.show()
+
+# fig = plot_acf(art_df_diff, color = "blue", lags=len(art_df_diff)-1) # ACF cannot be longer than the data.
+# plt.title('Art Index ACF 500+ lags')
+# plt.show()
+
+# fig = plot_acf(art_df_diff, color = "blue", lags=120) # Plotting most interesting subset of the ACF
+# plt.title('Art Index ACF 120 lags')
+# plt.show()
+
+# fig = plot_pacf(wine_df_diff, color = "green", lags=int((len(wine_df_diff)/2)-1)) # PACF cannot be longer than 50% of the data
+# plt.title('Wine Index PACF 120+ lags')
+# plt.show()
+
+# fig = plot_pacf(wine_df_diff, color = "green", lags=50) # Plotting most interesting subset of the PACF
 # plt.title('Wine Index PACF 50 lags')
 # plt.show()
 
-# fig = plot_pacf(watch_df_diff, color = "green", lags=50)
+# fig = plot_pacf(watch_df_diff, color = "green", lags=int((len(watch_df_diff)/2)-1)) # PACF cannot be longer than 50% of the data
+# plt.title('Watch Index PACF 100+ lags')
+# plt.show()
+
+# fig = plot_pacf(watch_df_diff, color = "green", lags=50) # Plotting most interesting subset of the PACF
 # plt.title('Watch Index PACF 50 lags')
 # plt.show()
 
-# fig = plot_pacf(art_df_diff, color = "green", lags=50)
+# fig = plot_pacf(art_df_diff, color = "green", lags=int((len(art_df_diff)/2)-1)) # PACF cannot be longer than 50% of the data
+# plt.title('Art Index PACF 250+ lags')
+# plt.show()
+
+# fig = plot_pacf(art_df_diff, color = "green", lags=50) # Plotting most interesting subset of the PACF
 # plt.title('Art Index PACF 50 lags')
+# plt.show()
+
+# fig = plot_acf(wine_seasonal, color = "blue", lags=269) 
+# plt.title('Wine Seasonality ACF 269 lags')
+# plt.show() 
+
+# fig = plot_acf(wine_seasonal, color = "blue", lags=80) # Plotting most interesting subset of the ACF
+# plt.title('Wine Seasonality ACF 80 lags')
+# plt.show() 
+
+# fig = plot_pacf(wine_seasonal, color = "green", lags=134) # PACF cannot be longer than 50% of the data
+# plt.title('Wine Seasonality PACF 134 lags')
+# plt.show()
+
+# fig = plot_pacf(wine_seasonal, color = "green", lags=50) # Plotting most interesting subset of the PACF
+# plt.title('Wine Seasonality PACF 50 lags')
 # plt.show()
 
 
