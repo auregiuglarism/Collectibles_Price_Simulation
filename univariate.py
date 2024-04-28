@@ -24,6 +24,8 @@ import statsmodels.api as sm
 # https://towardsdev.com/time-series-forecasting-part-5-cb2967f18164
 # https://www.geeksforgeeks.org/box-jenkins-methodology-for-arima-models/
 
+# https://towardsdatascience.com/understanding-the-seasonal-order-of-the-sarima-model-ebef613e40fa
+
 ##### PREPROCESSING #####
 
 def moving_average_smooth(df, window_size):
@@ -132,7 +134,7 @@ def evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, candidates, eval_df, s
             cd_fit_results = create_ARIMA_wine(wine_train, candidate) 
                 
             # Test candidate model on test set
-            _, cd_mae, cd_mse, mae_bas, mse_bas, mae_mean, mse_mean = test_ARIMA_wine(wine_test, cd_fit_results, seasonal=False)
+            _, cd_mae, cd_mse, mae_bas, mse_bas, mae_mean, mse_mean = test_ARIMA_wine(wine_test, cd_fit_results, seasonal)
 
             # Store evaluation information
             eval_df.loc[len(eval_df)] = [candidate, seasonal_order, cd_fit_results.aic, cd_fit_results.bic, cd_mae, cd_mse]
@@ -145,7 +147,7 @@ def evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, candidates, eval_df, s
             cd_fit_results = ARIMAResults.load('models\wine_sarima.pkl')
 
             # Test candidate model on test set
-            _, cd_mae, cd_mse, mae_bas, mse_bas, mae_mean, mse_mean = test_ARIMA_wine(wine_test, cd_fit_results, seasonal=True)
+            _, cd_mae, cd_mse, mae_bas, mse_bas, mae_mean, mse_mean = test_ARIMA_wine(wine_test, cd_fit_results, seasonal)
 
             # Store evaluation information
             eval_df.loc[len(eval_df)] = [candidate, seasonal_order, cd_fit_results.aic, cd_fit_results.bic, cd_mae, cd_mse]
@@ -169,7 +171,7 @@ def evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df
         fit_results = create_ARIMA_wine(wine_train, start, seasonal_start)
 
     # Test ARIMA Model
-    yhat_test, _, _, _, _, _, _ = test_ARIMA_wine(wine_test, fit_results)
+    yhat_test, _, _, _, _, _, _ = test_ARIMA_wine(wine_test, fit_results, seasonal)
 
     # Get Evaluation Metrics for this model:
     eval_df = evaluate_ARIMA_wine_with_Plots(wine_train, wine_test, start_cd, eval_df, seasonal, seasonal_order=seasonal_start)
@@ -560,7 +562,7 @@ start_cd = [(17,1,12)]
 # The period in the ACF seems to repeat itself every 9 lags, thus we can set our M to be 9.
 # But we will put just above the AR and MA order of the ARIMA to avoid duplicate lags
 seasonal_start_cd = [(13,0,71,18)] # Seasonal order needs to be > to AR and MA order of ARIMA
-# evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df, seasonal_start_cd, seasonal=False)
+evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df, seasonal_start_cd, seasonal=True)
 
 # Create optimal ARIMA model
 optimal = start_cd[0]
