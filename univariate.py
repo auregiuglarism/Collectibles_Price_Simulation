@@ -399,18 +399,34 @@ def forecast_ARIMA_watch(watch_data, watch_train, watch_test, forecast_steps, le
     plt.ylabel('Index Value')
     plt.show()
 
-def create_ARIMA_art(art_train):
-    model = ARIMA(art_train, trend='n', order=(1,1,1), # Correlogram indicates the need for MA and AR.
-            enforce_stationarity=True, 
-            enforce_invertibility=True, # Invertibility is necessary since the MA component is active
-            seasonal_order=(0,1,1,42)) # A large seasonal order to capture subtle seasonality and complex pattern of the data.
-    
-    fit_results = model.fit()
-    print(fit_results.summary())
-    fit_results.save(f"models/art_arima.pkl")
+def create_ARIMA_art(art_train, order, seasonal_order=None):
+    if seasonal_order == None: # ARIMA Model
+        model = ARIMA(art_train, trend='n', order=order,  
+            enforce_stationarity=True,
+            enforce_invertibility=True) 
+        
+        fit_results = model.fit()
+        fit_results.save(f'models/art_arima.pkl') # Comment this when evaluating multiple models
+        
+    else: # SARIMA Model
+        model = ARIMA(art_train, trend='n', order=order,  
+                enforce_stationarity=True,
+                enforce_invertibility=True,
+                seasonal_order=seasonal_order) 
+        
+        fit_results = model.fit()
+        fit_results.save(f'models/art_sarima.pkl') # Comment this when evaluating multiple models
 
-def test_ARIMA_art(art_test): # Testing data
-    art_model = ARIMAResults.load(f'models/art_arima.pkl')
+    # print(fit_results.summary()) # Comment this when evaluating multiple models
+    
+    return fit_results
+
+def test_ARIMA_art(art_test, art_model=None, seasonal=False): # Testing data
+    if art_model == None and seasonal == False: # ARIMA Model
+        art_model = ARIMAResults.load(f'models/art_arima.pkl')
+    
+    elif art_model == None and seasonal == True: # SARIMA Model
+        art_model = ARIMAResults.load(f'models/art_sarima.pkl')
 
     forecast_steps = art_test.shape[0]
     forecast = art_model.get_forecast(steps=forecast_steps)
@@ -428,12 +444,12 @@ def test_ARIMA_art(art_test): # Testing data
     mse_baseline = mean_squared_error(y_test, baseline)
     mae_baseline_mean = mean_absolute_error(y_test, baseline_mean)
     mse_baseline_mean = mean_squared_error(y_test, baseline_mean)
-    print("ART MAE ARIMA (test): {:0.1f}".format(mae))
-    print("ART MSE ARIMA (test): {:0.1f}".format(mse))
-    print("ART MAE Baseline (test): {:0.1f}".format(mae_baseline))
-    print("ART MSE Baseline (test): {:0.1f}".format(mse_baseline))
-    print("ART MAE Baseline Mean (test): {:0.1f}".format(mae_baseline_mean))
-    print("ART MSE Baseline Mean (test): {:0.1f}".format(mse_baseline_mean))
+    # print("ART MAE ARIMA (test): {:0.1f}".format(mae)) # Comment this when evaluating multiple models
+    # print("ART MSE ARIMA (test): {:0.1f}".format(mse)) # Comment this when evaluating multiple models
+    # print("ART MAE Baseline (test): {:0.1f}".format(mae_baseline)) # Comment this when evaluating multiple models 
+    # print("ART MSE Baseline (test): {:0.1f}".format(mse_baseline)) # Comment this when evaluating multiple models
+    # print("ART MAE Baseline Mean (test): {:0.1f}".format(mae_baseline_mean)) # Comment this when evaluating multiple models
+    # print("ART MSE Baseline Mean (test): {:0.1f}".format(mse_baseline_mean)) # Comment this when evaluating multiple models
 
     # Plot the results
     plt.plot(yhat_test, color="green", label="predicted")
@@ -447,8 +463,97 @@ def test_ARIMA_art(art_test): # Testing data
     plt.ylabel('Index Value')
     plt.show()
 
-def forecast_ARIMA_art(art_data, art_train, art_test, forecast_steps, length, end_date):
-    art_model = ARIMAResults.load(f'models/art_arima.pkl')
+    return yhat_test, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean
+
+def evaluate_ARIMA_art_with_Plots(art_train, art_test, candidates, eval_df, seasonal=False, seasonal_order=None): 
+    # Take the model with the lowest eval metrics and errors
+    for candidate in candidates:
+        if seasonal == False:
+            # Fit candidate model
+            cd_fit_results = create_ARIMA_art(art_train, candidate) 
+                
+            # Test candidate model on test set
+            _, cd_mae, cd_mse, mae_bas, mse_bas, mae_mean, mse_mean = test_ARIMA_art(art_test, cd_fit_results, seasonal)
+
+            # Store evaluation information
+            eval_df.loc[len(eval_df)] = [candidate, seasonal_order, cd_fit_results.aic, cd_fit_results.bic, cd_mae, cd_mse]
+            print("MAE Baseline:", mae_bas)
+            print("MSE Baseline:", mse_bas)
+            print("MAE Mean:", mae_mean)
+            print("MSE Mean:", mse_mean)
+
+        else:
+            cd_fit_results = ARIMAResults.load(f'models/art_sarima.pkl')
+
+            # Test candidate model on test set
+            _, cd_mae, cd_mse, mae_bas, mse_bas, mae_mean, mse_mean = test_ARIMA_art(art_test, cd_fit_results, seasonal)
+
+            # Store evaluation information
+            eval_df.loc[len(eval_df)] = [candidate, seasonal_order, cd_fit_results.aic, cd_fit_results.bic, cd_mae, cd_mse]
+            print("MAE Baseline:", mae_bas)
+            print("MSE Baseline:", mse_bas)
+            print("MAE Mean:", mae_mean)
+            print("MSE Mean:", mse_mean)
+        
+    return eval_df
+
+def evaluate_ARIMA_art_with_BoxJenkins(art_train, art_test, start_cd, eval_df, seasonal_start_cd, seasonal=False):
+    if seasonal == False:
+        # Create ARIMA Model
+        start = start_cd[0]
+        seasonal_start = None
+        fit_results = create_ARIMA_art(art_train, start)
+    
+    else:
+        start = start_cd[0]
+        seasonal_start = seasonal_start_cd[0]
+        fit_results = create_ARIMA_art(art_train, start, seasonal_start)
+
+    # Test ARIMA Model
+    yhat_test, _, _, _, _, _, _ = test_ARIMA_art(art_test, fit_results, seasonal)
+
+    # Get Evaluation Metrics for this model:
+    eval_df = evaluate_ARIMA_art_with_Plots(art_train, art_test, start_cd, eval_df, seasonal, seasonal_order=seasonal_start)
+    print("Model Evaluation Metrics: \n", eval_df)
+
+    # Compute Residuals
+    y_test = art_test
+    residuals = y_test - yhat_test
+
+    # Plot Residuals - Does it follow a white noise pattern ?
+    plt.plot(residuals, color="blue", label="residuals", linestyle=":")
+    plt.axhline(y=0, color='r', linestyle='--')
+    plt.legend(loc='best')
+    plt.title('Model Residuals on Art Index Test Set')
+    plt.xticks([0, len(residuals)/2, len(residuals)-1])
+    plt.xlabel('Time')
+    plt.ylabel('Residual Value')
+    plt.show()
+
+    # Check ACF and PACF of Residuals
+    fig = plot_acf(residuals, color = "blue", lags=109) # ACF cannot be longer than testing data.
+    plt.title('Art Index Model Residuals ACF 50 lags')
+    plt.show()
+
+    fig = plot_pacf(residuals, color = "green", lags=55) # PACF cannot be longer than 50% of the data
+    plt.title('Art Index Model Residuals PACF 26 lags')
+    plt.show()
+
+    # Perform Ljung-Box Test on Residuals to test if they are white noise/independently distributed
+    # Null Hypothesis : The residuals are independently distributed
+    # Alternative Hypothesis : The residuals are not independently distributed
+    # If p-value < 0.05, reject the null hypothesis thus we want to see a p-value > 0.05
+
+    is_white_noise = is_white_noise_with_LjungBox(residuals, significance_level=0.05, lags=41)
+    print(f"Are the residuals white noise? {is_white_noise}")
+
+
+def forecast_ARIMA_art(art_data, art_train, art_test, forecast_steps, length, end_date, art_model=None, seasonal=False):
+    if art_model == None and seasonal == False: # ARIMA Model
+        art_model = ARIMAResults.load(f'models/art_arima.pkl')
+    elif art_model == None and seasonal == True: # SARIMA Model
+        art_model = ARIMAResults.load(f'models/art_sarima.pkl')
+
     forecast = art_model.get_forecast(steps=forecast_steps)
     forecast_ci = forecast.conf_int()
     yhat = forecast.predicted_mean.values # Apply the exp transformation if you used log transform during fit before to invert scales back
@@ -474,9 +579,9 @@ wine_df_decomp, watch_df_decomp, art_dfdecomp = preprocessing.main(univariate=Tr
 ## Evaluating stationarity of the data and the ARIMA Parameters ##
 
 # # Data is non-stationary, so we apply first order differencing
-# wine_df_diff = wine_df_decomp.observed.diff().dropna()
-# watch_df_diff = watch_df_decomp.observed.diff().dropna()
-# art_df_diff = art_dfdecomp.observed.diff().dropna()
+wine_df_diff = wine_df_decomp.observed.diff().dropna()
+watch_df_diff = watch_df_decomp.observed.diff().dropna()
+art_df_diff = art_dfdecomp.observed.diff().dropna()
 
 # NB The data exhibits WAY better stationary after first order differencing
 # Smoothing the data with a 30 day moving average messes (for some reason) the stationarity of the data.
@@ -591,7 +696,7 @@ watch_seasonal = watch_df_decomp.seasonal
 eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE"]) # To store the most important evaluation metrics
 
 # Box Jenkins Methodology to determine the optimal ARIMA model
-# Evaluate Wine ARIMA model with ACF + PACF plots
+# Evaluate Watch ARIMA model with ACF + PACF plots
 # Candidates are chosen based on the ACF and PACF plots
 # candidates = [(0,1,1), (0,1,6), (2,1,0), (37,1,0), (37,1,1), (37,1,6), (2,1,6), (2,1,1)]
 # eval_df = evaluate_ARIMA_watch_with_Plots(watch_train, watch_test, candidates, eval_df)
@@ -633,7 +738,7 @@ start_cd = [(37,1,9)]
 # Although the period in the ACF of the seasonal component seems to repeat itself every 12 lags and the fact we have monthly data.
 # There is evidence for a seasonal order of 12 lags, however we cannot set it lower than the AR and MA order of the ARIMA model to avoid duplicates.
 seasonal_start_cd = [(14,0,72,38)] # Seasonal order needs to be > to AR and MA order
-evaluate_ARIMA_watch_with_BoxJenkins(watch_train, watch_test, start_cd, eval_df, seasonal_start_cd, seasonal=True)
+# evaluate_ARIMA_watch_with_BoxJenkins(watch_train, watch_test, start_cd, eval_df, seasonal_start_cd, seasonal=True)
 
 # Create optimal (S)ARIMA model
 optimal = start_cd[0]
@@ -657,12 +762,22 @@ end_long = "2034-02-01"
 # Split data into train and test
 art_train = art_dfdecomp.observed[:int(0.8*len(art_dfdecomp.observed))]
 art_test = art_dfdecomp.observed[int(0.8*len(art_dfdecomp.observed)):]
+art_seasonal = art_dfdecomp.seasonal
+eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE"]) # To store the most important evaluation metrics
 
-# Create ARIMA model
-# create_ARIMA_art(art_train) # Only run once
+# Box Jenkins Methodology to determine the optimal ARIMA model
+# Evaluate Art ARIMA model with ACF + PACF plots
+# Candidates are chosen based on the ACF and PACF plots
+# candidates = [(0,1,6), (0,1,42), (0,1,96), (42,1,0), (30,1,0), (30,1,6), (30,1,42), (30,1,96), (42,1,6), (42,1,42), (42,1,96)]
+# eval_df = evaluate_ARIMA_art_with_Plots(art_train, art_test, candidates, eval_df)
+# print(eval_df)
 
-# Test ARIMA model
-# test_ARIMA_art(art_test)
+# The best model seems to be (30,1,6)
+
+# Evaluate Art ARIMA model with Box-Jenkins model diagnostic
+# Starting point : previous best model (30,1,6)
+start_cd = [(30,1,6)] 
+evaluate_ARIMA_art_with_BoxJenkins(art_train, art_test, start_cd, eval_df, seasonal_start_cd=None, seasonal=False)
 
 # Now that model is trained + evaluated, use it to forecast
 short_term = art_test.shape[0] + 12 # 1 year
@@ -674,7 +789,7 @@ ref_start = art_dfdecomp.observed.index[-1] # "2023-09-01"
 end_short = "2024-09-01"
 end_medium = "2028-09-01"
 end_long = "2051-02-01"
-# forecast_ARIMA_art(art_dfdecomp.observed, art_train, art_test, long_term, "Long", end_date=end_long)
+# forecast_ARIMA_art(art_dfdecomp.observed, art_train, art_test, long_term, "Long", end_date=end_long, art_model=None, seasonal=False)
       
 ##### VISUALIZATION / HELPER PLOTS #####
 
