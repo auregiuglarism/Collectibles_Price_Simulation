@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import preprocessing   
+
 from statsmodels.tsa.stattools import kpss, adfuller
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.arima.model import ARIMA
@@ -12,6 +13,7 @@ import statsmodels.api as sm
 
 # TODO : Justify the choice of SARIMA parameters for each asset in the report
 # TODO : Continue Fine-tuning Parameters
+# TODO : Find a way to remotely train or train faster the heavy SARIMA model for each asset
 
 # Links to understand more about SARIMA Parameters : 
 
@@ -25,6 +27,10 @@ import statsmodels.api as sm
 # https://www.geeksforgeeks.org/box-jenkins-methodology-for-arima-models/
 
 # https://towardsdatascience.com/understanding-the-seasonal-order-of-the-sarima-model-ebef613e40fa
+
+# https://dsri.maastrichtuniversity.nl/
+# https://medium.com/rapids-ai/arima-forecast-large-time-series-datasets-with-rapids-cuml-18428a00d02e
+# https://docs.rapids.ai/install#pip
 
 ##### PREPROCESSING #####
 
@@ -641,7 +647,7 @@ eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE"]
 
 # Evaluate Wine ARIMA model with Box-Jenkins model diagnostic
 # Starting point : previous best model (17,1,20) by combining previous best AR and MA orders
-start_cd = [(17,1,12)] 
+start_cd = [(17,1,20)] 
 # evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df, seasonal_start_cd=None, seasonal=False)
 # The residual of this model (17,1,20) indicates a significant value of 0 at lag 12 in the ACF
 # As well as a significant value of 0 at lag 17 in the PACF of the residuals which is a good sign telling us that the AR order is optimal
@@ -667,13 +673,13 @@ start_cd = [(17,1,12)]
 # outside the significance region. Or 6 which is the maximum negative value for a lag outside the significance region.
 # The period in the ACF seems to repeat itself every 9 lags, thus we can set our M to be 9.
 # But we will put just above the AR and MA order of the ARIMA to avoid duplicate lags
-seasonal_start_cd = [(13,0,71,18)] # Seasonal order needs to be > to AR and MA order of ARIMA
-# evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df, seasonal_start_cd, seasonal=True)
+seasonal_start_cd = [(13,0,6,18)] # Seasonal order needs to be > to AR and MA order of ARIMA
+evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df, seasonal_start_cd, seasonal=True)
 
 # Create optimal (S)ARIMA model
 optimal = start_cd[0]
 optimal_seasonal = seasonal_start_cd[0]
-wine_model = create_ARIMA_wine(wine_train, optimal) # Only run once to save the optimal model
+# wine_model = create_ARIMA_wine(wine_train, optimal) # Only run once to save the optimal model
 # wine_model = create_ARIMA_wine(wine_train, optimal, optimal_seasonal) # Only run once to save the optimal model
 
 # Now that the optimal has been found, use it to forecast
@@ -686,7 +692,7 @@ ref_start = wine_df_decomp.observed.index[-1] # "2023-12-31"
 end_short = "2024-12-31"
 end_medium = "2028-12-31"
 end_long = "2037-06-30"
-forecast_ARIMA_wine(wine_df_decomp.observed, wine_train, wine_test, long_term, "Long", end_date=end_long, wine_model=None, seasonal=False)
+# forecast_ARIMA_wine(wine_df_decomp.observed, wine_train, wine_test, long_term, "Long", end_date=end_long, wine_model=None, seasonal=True)
 
 # WATCH INDEX DATA FORECASTING
 # Split data into train and test
@@ -737,13 +743,13 @@ start_cd = [(37,1,9)]
 # We can set our seasonal order to be 38 since it is the minimum value > to the AR and MA order of the ARIMA model
 # Although the period in the ACF of the seasonal component seems to repeat itself every 12 lags and the fact we have monthly data.
 # There is evidence for a seasonal order of 12 lags, however we cannot set it lower than the AR and MA order of the ARIMA model to avoid duplicates.
-seasonal_start_cd = [(14,0,72,38)] # Seasonal order needs to be > to AR and MA order
+seasonal_start_cd = [(14,0,12,38)] # Seasonal order needs to be > to AR and MA order
 # evaluate_ARIMA_watch_with_BoxJenkins(watch_train, watch_test, start_cd, eval_df, seasonal_start_cd, seasonal=True)
 
 # Create optimal (S)ARIMA model
 optimal = start_cd[0]
 optimal_seasonal = seasonal_start_cd[0]
-create_ARIMA_watch(watch_train, optimal) # Only run once to save the optimal model
+# create_ARIMA_watch(watch_train, optimal) # Only run once to save the optimal model
 # create_ARIMA_watch(watch_train, optimal, optimal_seasonal) # Only run once to save the optimal model
 
 # Now that model is trained + evaluated, use it to forecast
@@ -756,7 +762,7 @@ ref_start = watch_df_decomp.observed.index[-1] # "2023-12-01"
 end_short = "2024-12-01"
 end_medium = "2028-12-01"
 end_long = "2034-02-01"
-forecast_ARIMA_watch(watch_df_decomp.observed, watch_train, watch_test, long_term, "Long", end_date=end_long, watch_model=None, seasonal=False)
+# forecast_ARIMA_watch(watch_df_decomp.observed, watch_train, watch_test, long_term, "Long", end_date=end_long, watch_model=None, seasonal=False)
 
 # ART INDEX DATA FORECASTING
 # Split data into train and test
@@ -810,7 +816,7 @@ seasonal_start_cd = [(19,0,12,33)] # Seasonal order needs to be > to AR and MA o
 # Create optimal (S)ARIMA model
 optimal = start_cd[0]
 optimal_seasonal = seasonal_start_cd[0]
-create_ARIMA_art(art_train, optimal) # Only run once to save the optimal model
+# create_ARIMA_art(art_train, optimal) # Only run once to save the optimal model
 # create_ARIMA_art(art_train, optimal, optimal_seasonal) # Only run once to save the optimal model
 
 # Now that model is trained + evaluated, use it to forecast
@@ -823,7 +829,7 @@ ref_start = art_dfdecomp.observed.index[-1] # "2023-09-01"
 end_short = "2024-09-01"
 end_medium = "2028-09-01"
 end_long = "2051-02-01"
-forecast_ARIMA_art(art_dfdecomp.observed, art_train, art_test, long_term, "Long", end_date=end_long, art_model=None, seasonal=False)
+# forecast_ARIMA_art(art_dfdecomp.observed, art_train, art_test, long_term, "Long", end_date=end_long, art_model=None, seasonal=False)
       
 ##### VISUALIZATION / HELPER PLOTS #####
 
