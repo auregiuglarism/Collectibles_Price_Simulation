@@ -673,8 +673,10 @@ start_cd = [(17,1,20)]
 # outside the significance region. Or 6 which is the maximum negative value for a lag outside the significance region.
 # The period in the ACF seems to repeat itself every 9 lags, thus we can set our M to be 9.
 # But we will put just above the AR and MA order of the ARIMA to avoid duplicate lags
-seasonal_start_cd = [(13,0,6,18)] # Seasonal order needs to be > to AR and MA order of ARIMA
+seasonal_start_cd = [(21,0,18,21)] # Seasonal order needs to be > to AR and MA order of ARIMA
 evaluate_ARIMA_wine_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df, seasonal_start_cd, seasonal=True)
+# The residual of this initial model exhibits a value of 0 at lag 21 in the PACF so set p=21
+# The residual of this initial model exhibits a value of 0 at lag 18 in the ACF so set q=18
 
 # Create optimal (S)ARIMA model
 optimal = start_cd[0]
