@@ -9,6 +9,7 @@ from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.arima.model import ARIMAResults
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.model_selection import TimeSeriesSplit
 import statsmodels.api as sm
 
 # TODO : Justify the choice of SARIMA parameters for each asset in the report
@@ -574,6 +575,15 @@ def forecast_ARIMA_art(art_data, art_train, art_test, forecast_steps, length, en
     plt.xlabel('Time')
     plt.ylabel('Index Value')
     plt.show()
+
+def cross_validation(data, order, seasonal_order=None, seasonal=False):
+    tscv = TimeSeriesSplit(n_splits=5, test_size=0.2)  # 5 folds, 20% test size
+    mse_scores = []
+    mae_scores = []
+    for train_index, test_index in tscv.split(data):
+        train_data, test_data = data[train_index], data[test_index]
+
+
 
 ##### MAIN #####
 
