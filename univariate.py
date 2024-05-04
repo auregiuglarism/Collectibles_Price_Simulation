@@ -121,16 +121,16 @@ def test_model(test, model=None, seasonal=False, index='wine'): # Testing data
     mape_baseline_mean = np.mean(np.abs((y_test - baseline_mean) / y_test)) * 100
 
     # Plot the results
-    plt.plot(yhat_test, color="green", label="predicted") # Comment this when evaluating multiple models
-    plt.plot(y_test, color="blue", label="observed") # Comment this when evaluating multiple models
-    plt.plot(baseline, color="red", label="baseline") # Comment this when evaluating multiple models 
-    plt.plot(baseline_mean, color="purple", label="mean") # Comment this when evaluating multiple models 
-    plt.legend(loc='best') # Comment this when evaluating multiple models
-    plt.title(f'Compare forecasted and observed {index} index values for test set') # Comment this when evaluating multiple models
-    plt.xticks([0, len(y_test)/2, len(y_test)-1]) # Comment this when evaluating multiple models 
-    plt.xlabel('Time') # Comment this when evaluating multiple models 
-    plt.ylabel('Index value') # Comment this when evaluating multiple models
-    plt.show() # Comment this when evaluating multiple models
+    # plt.plot(yhat_test, color="green", label="predicted") # Comment this when evaluating multiple models
+    # plt.plot(y_test, color="blue", label="observed") # Comment this when evaluating multiple models
+    # plt.plot(baseline, color="red", label="baseline") # Comment this when evaluating multiple models 
+    # plt.plot(baseline_mean, color="purple", label="mean") # Comment this when evaluating multiple models 
+    # plt.legend(loc='best') # Comment this when evaluating multiple models
+    # plt.title(f'Compare forecasted and observed {index} index values for test set') # Comment this when evaluating multiple models
+    # plt.xticks([0, len(y_test)/2, len(y_test)-1]) # Comment this when evaluating multiple models 
+    # plt.xlabel('Time') # Comment this when evaluating multiple models 
+    # plt.ylabel('Index value') # Comment this when evaluating multiple models
+    # plt.show() # Comment this when evaluating multiple models
 
     return yhat_test, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean, rmse, rmse_baseline, rmse_baseline_mean, mape, mape_baseline, mape_baseline_mean
 
@@ -138,100 +138,88 @@ def evaluate_model_with_Plots(train, test, candidates, eval_df, seasonal=False, 
     # Take the model with the lowest eval metrics and errors
     for candidate in candidates:
         if seasonal == False:
-            # Fit candidate model
-            cd_fit_results, _ = create_model(train, candidate, seasonal_order, index) 
-        
-            # Test candidate model on test set
-            _, cd_mae, cd_mse, mae_bas, mse_bas, mae_mean, mse_mean, cd_rmse, rmse_bas, rmse_mean, cd_mape, mape_bas, mape_mean = test_model(test, cd_fit_results, seasonal, index)
-
-            # Store evaluation information
-            eval_df.loc[len(eval_df)] = [candidate, seasonal_order, cd_fit_results.aic, cd_fit_results.bic, cd_mae, cd_mse, cd_rmse, cd_mape]
-            print("MAE Baseline:", mae_bas)
-            print("MSE Baseline:", mse_bas)
-            print("RMSE Baseline:", rmse_bas)
-            print("MAPE % Baseline:", mape_bas)
-            print("MAE Mean:", mae_mean)
-            print("MSE Mean:", mse_mean)
-            print("RMSE Mean:", rmse_mean)
-            print("MAPE % Mean:", mape_mean)
+            # Split cross validation
+            aic, bic, mae, mse, rmse, mape, mae_bas, mse_bas, rmse_bas, mape_bas, mae_mean, mse_mean, rmse_mean, mape_mean = split_cross_validation(train, candidate, index, seasonal_order=None, seasonal=False)
             
+            # Store evaluation information (those are already avg calculated in the split cross validation function)
+            eval_df.loc[len(eval_df)] = [candidate, seasonal_order, aic, bic, mae, mse, rmse, mape]
         else:
             cd_fit_results = ARIMAResults.load(f'models\{index}_sarima.pkl')
 
-            # Test candidate model on test set
-            _, cd_mae, cd_mse, mae_bas, mse_bas, mae_mean, mse_mean, cd_rmse, rmse_bas, rmse_mean, cd_mape, mape_bas, mape_mean = test_model(wine_test, cd_fit_results, seasonal, index)
+            # Split cross validation
+            aic, bic, mae, mse, rmse, mape, mae_bas, mse_bas, rmse_bas, mape_bas, mae_mean, mse_mean, rmse_mean, mape_mean = split_cross_validation(train, candidate, index, seasonal_order=None, seasonal=False)
 
-            # Store evaluation information
-            eval_df.loc[len(eval_df)] = [candidate, seasonal_order, cd_fit_results.aic, cd_fit_results.bic, cd_mae, cd_mse, cd_rmse, cd_mape]
-            print("MAE Baseline:", mae_bas)
-            print("MSE Baseline:", mse_bas)
-            print("RMSE Baseline:", rmse_bas)
-            print("MAPE % Baseline:", mape_bas)
-            print("MAE Mean:", mae_mean)
-            print("MSE Mean:", mse_mean)
-            print("RMSE Mean:", rmse_mean)
-            print("MAPE % Mean:", mape_mean)
+            # Store evaluation information (those are already avg calculated in the split cross validation function)
+            eval_df.loc[len(eval_df)] = [candidate, seasonal_order, aic, bic, mae, mse, rmse, mape]
+        
+    print("MAE Baseline:", mae_bas)
+    print("MSE Baseline:", mse_bas)
+    print("RMSE Baseline:", rmse_bas)
+    print("MAPE % Baseline:", mape_bas)
+    print("MAE Mean:", mae_mean)
+    print("MSE Mean:", mse_mean)
+    print("RMSE Mean:", rmse_mean)
+    print("MAPE % Mean:", mape_mean)
         
     return eval_df
 
-def evaluate_model_with_BoxJenkins(train, test, start_cd, eval_df, seasonal_start_cd, seasonal=False, index='wine'):
-    if seasonal == False:
-        # Create ARIMA Model
-        start = start_cd[0]
-        seasonal_start = None
-        fit_results, _ = create_model(train, start, seasonal_start, index)
+def evaluate_model_with_BoxJenkins(train, test, eval_df, start_cd, seasonal_start_cd=None, seasonal=False, index='wine'):
+    # Test model
+    model, train_residuals = create_model(train, start_cd, seasonal_start_cd, index)
+    yhat_test, _, _, _, _, _, _, _, _, _, _, _, _ = test_model(test, model, seasonal, index)
     
-    else:
-        start = start_cd[0]
-        seasonal_start = seasonal_start_cd[0]
-        fit_results, _ = create_model(train, start, seasonal_start, index)
-
-    # Test ARIMA Model
-    yhat_test, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean, rmse, rmse_baseline, rmse_baseline_mean, mape, mape_baseline, mape_baseline_mean = test_model(test, fit_results, seasonal, index)
-
-    # Get Evaluation Metrics for this model:
-    eval_df.loc[len(eval_df)] = [start, seasonal_start, fit_results.aic, fit_results.bic, mae, mse, rmse, mape]
-
     # Compute Test Residuals
     y_test = test
-    residuals = y_test - yhat_test
+    test_residuals = y_test - yhat_test
 
-    # Plot Residuals - Does it follow a white noise pattern ?
-    plt.plot(residuals, color="blue", label="residuals", linestyle=":")
+    # Plot Train Residuals - Does it follow a white noise pattern ?
+    plt.plot(train_residuals, color="black", label="train residuals", linestyle=":")
     plt.axhline(y=0, color='r', linestyle='--')
     plt.legend(loc='best')
-    plt.title(f'Model residuals on {index} index test set')
-    plt.xticks([0, len(residuals)/2, len(residuals)-1])
+    plt.title(f'Model train residuals on {index} index test set')
+    plt.xticks([0, len(train_residuals)/2, len(train_residuals)-1])
     plt.xlabel('Time')
     plt.ylabel('Residual value')
     plt.show()
 
-    # Check ACF and PACF of Residuals
+    # Plot Test Residuals - Does it follow a white noise pattern ?
+    plt.plot(test_residuals, color="blue", label="test residuals", linestyle=":")
+    plt.axhline(y=0, color='r', linestyle='--')
+    plt.legend(loc='best')
+    plt.title(f'Model test residuals on {index} index test set')
+    plt.xticks([0, len(test_residuals)/2, len(test_residuals)-1])
+    plt.xlabel('Time')
+    plt.ylabel('Residual value')
+    plt.show()
+
+    # Check ACF and PACF of Train Residuals
+
+    # Check ACF and PACF of Test Residuals
     if index=='wine':
-        fig = plot_acf(residuals, color = "blue", lags=50)
-        plt.title(f'Index {index} model residuals ACF')
+        fig = plot_acf(train_residuals, color = "blue", lags=len(train_residuals)-1)
+        plt.title(f'Index {index} model train residuals ACF')
         plt.show()
 
-        fig = plot_pacf(residuals, color = "green", lags=26) # PACF cannot be longer than 50% of the data
-        plt.title(f'Index {index} model residuals PACF')
+        fig = plot_pacf(train_residuals, color = "green", lags=int(len(train_residuals)/2)-1) # PACF cannot be longer than 50% of the data
+        plt.title(f'Index {index} model train residuals PACF')
         plt.show()
 
     elif index=='watch':
-        fig = plot_acf(residuals, color = "blue", lags=41) # ACF cannot be longer than testing data.
-        plt.title('Watch Index Model Residuals ACF 50 lags')
+        fig = plot_acf(train_residuals, color = "blue", lags=41) # ACF cannot be longer than testing data.
+        plt.title(f'Index {index} model train residuals ACF 50 lags')
         plt.show()
 
-        fig = plot_pacf(residuals, color = "green", lags=20) # PACF cannot be longer than 50% of the data
-        plt.title('Watch Index Model Residuals PACF 26 lags')
+        fig = plot_pacf(test_residuals, color = "green", lags=20) # PACF cannot be longer than 50% of the data
+        plt.title(f'Index {index} model train residuals PACF 26 lags')
         plt.show()
 
     else: # index=='art'
-        fig = plot_acf(residuals, color = "blue", lags=109) # ACF cannot be longer than testing data.
-        plt.title('Art Index Model Residuals ACF 100+ lags')
+        fig = plot_acf(test_residuals, color = "blue", lags=109) # ACF cannot be longer than testing data.
+        plt.title(f'Index {index} model train residuals ACF 100+ lags')
         plt.show()
 
-        fig = plot_pacf(residuals, color = "green", lags=55) # PACF cannot be longer than 50% of the data
-        plt.title('Art Index Model Residuals PACF 55 lags')
+        fig = plot_pacf(test_residuals, color = "green", lags=55) # PACF cannot be longer than 50% of the data
+        plt.title(f'Index {index} model train residuals PACF 55 lags')
         plt.show()
 
     # Perform Ljung-Box Test on Residuals to test if they are white noise/independently distributed
@@ -239,16 +227,25 @@ def evaluate_model_with_BoxJenkins(train, test, start_cd, eval_df, seasonal_star
     # Alternative Hypothesis : The residuals are not independently distributed
     # If p-value < 0.05, reject the null hypothesis thus we want to see a p-value > 0.05
     if index=='wine':
-        is_white_noise = is_white_noise_with_LjungBox(residuals, significance_level=0.05)
-        print(f"Are the residuals white noise? {is_white_noise}")
+        is_white_noise = is_white_noise_with_LjungBox(train_residuals, significance_level=0.05)
+        print(f"Are the train residuals white noise? {is_white_noise}")
+
+        is_white_noise = is_white_noise_with_LjungBox(test_residuals, significance_level=0.05)
+        print(f"Are the test residuals white noise? {is_white_noise}")
 
     elif index=='watch':
-        is_white_noise = is_white_noise_with_LjungBox(residuals, significance_level=0.05, lags=41)
-        print(f"Are the residuals white noise? {is_white_noise}")
+        is_white_noise = is_white_noise_with_LjungBox(train_residuals, significance_level=0.05, lags=41)
+        print(f"Are the train residuals white noise? {is_white_noise}")
+
+        is_white_noise = is_white_noise_with_LjungBox(test_residuals, significance_level=0.05, lags=41)
+        print(f"Are the test residuals white noise? {is_white_noise}")
 
     else: # index=='art'
-        is_white_noise = is_white_noise_with_LjungBox(residuals, significance_level=0.05, lags=41)
-        print(f"Are the residuals white noise? {is_white_noise}")
+        is_white_noise = is_white_noise_with_LjungBox(train_residuals, significance_level=0.05, lags=41)
+        print(f"Are the train residuals white noise? {is_white_noise}")
+
+        is_white_noise = is_white_noise_with_LjungBox(test_residuals, significance_level=0.05, lags=41)
+        print(f"Are the test residuals white noise? {is_white_noise}")
 
 def forecast_model(data, train, test, forecast_steps, length, end_date, model=None, seasonal=False, index='wine'):
     if model == None and seasonal == False: # ARIMA Model
@@ -280,7 +277,7 @@ def forecast_model(data, train, test, forecast_steps, length, end_date, model=No
     plt.ylabel('Index value')
     plt.show()
 
-def split_cross_validation(data, eval_df, order, seasonal_order=None, seasonal=False, index='wine'):
+def split_cross_validation(data, order, index='wine', seasonal_order=None, seasonal=False):
     # Not using blocked cross-validation because there is not enough data for sufficient blocks
     # Using split cross validation instead with an 80/20 ratio at each split
     mae_l = []
@@ -307,7 +304,7 @@ def split_cross_validation(data, eval_df, order, seasonal_order=None, seasonal=F
         test = split_data[int(0.8*len(split_data)):]
 
         fit_results, _ = create_model(train, order, seasonal_order, index)
-        yhat_test, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean, rmse, rmse_baseline, rmse_baseline_mean, mape, mape_baseline, mape_baseline_mean = test_model(test, fit_results, seasonal, index)
+        _, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean, rmse, rmse_baseline, rmse_baseline_mean, mape, mape_baseline, mape_baseline_mean = test_model(test, fit_results, seasonal, index)
 
         # Model Evaluation Metrics
         mae_l.append(mae)
@@ -329,18 +326,16 @@ def split_cross_validation(data, eval_df, order, seasonal_order=None, seasonal=F
         rmse_l_mean.append(rmse_baseline_mean)
         mape_l_mean.append(mape_baseline_mean)
 
-    print("MAE Baseline:", np.mean(mae_l_bas))
-    print("MSE Baseline:", np.mean(mse_l_bas))
-    print("RMSE Baseline:", np.mean(rmse_l_bas))
-    print("MAPE % Baseline:", np.mean(mape_l_bas))
-    print("MAE Mean:", np.mean(mae_l_mean))
-    print("MSE Mean:", np.mean(mse_l_mean))
-    print("RMSE Mean:", np.mean(rmse_l_mean))
-    print("MAPE % Mean:", np.mean(mape_l_mean))
+    # Return all eval metrics
+    return np.mean(aic_l), np.mean(bic_l), np.mean(mae_l), np.mean(mse_l), np.mean(rmse_l), np.mean(mape_l), np.mean(mae_l_bas), np.mean(mse_l_bas), np.mean(rmse_l_bas), np.mean(mape_l_bas), np.mean(mae_l_mean), np.mean(mse_l_mean), np.mean(rmse_l_mean), np.mean(mape_l_mean)
 
-    eval_df.loc[len(eval_df)] = [order, seasonal_order, np.mean(aic_l), np.mean(bic_l), np.mean(mae_l), np.mean(mse_l), np.mean(rmse_l), np.mean(mape_l)]
-
-    return eval_df
+def generate_arima_candidates(p, d, q):
+  candidates = []
+  for p_val in p:
+    for d_val in d:
+      for q_val in q:
+        candidates.append((p_val, d_val, q_val))
+  return candidates
 
 ##### MAIN #####
 
@@ -400,35 +395,27 @@ eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE",
 # Box Jenkins Methodology to determine the optimal ARIMA model
 # Evaluate Wine ARIMA model with ACF + PACF plots
 # Candidates are chosen based on the ACF and PACF plots
-# candidates = [(17,1,0), (3,1,0), (0,1,20), (0,1,12), (0,1,3), (17,1,20)]
+# p, d, q = [0, 3, 17], [1], [0, 3, 12, 20]
+# candidates = generate_arima_candidates(p, d, q)
 # eval_df = evaluate_model_with_Plots(wine_train, wine_test, candidates, eval_df, index='wine')
 # print(eval_df)
 
-# Best model seems to be (17,1,0) if we want a simpler model 
-# (17,1,20) is the best in terms of MAE and (R)MSE, but it is more complex and thus penalized by AIC and BIC
-# We still do manage to be better than the baseline and the mean so this at least one success
+# Best model seems to be (3,1,20) 
+# We still do manage to be better than the baseline but worse than the mean so this is at least one success
 
 # However this suggests that the optimal cannot be precisely determined by the ACF and PACF plots 
-# Because in this case, both the MA and AR components are active, i.e p,q > 0
 # Thus we need to look at the residuals and the Box-Jenkins model diagnostic to determine the optimal model 
 
 # Evaluate Wine ARIMA model with Box-Jenkins model diagnostic
-# Starting point : previous best model (17,1,20) by combining previous best AR and MA orders
-start_cd = [(17,1,20)] 
-# evaluate_model_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df, seasonal_start_cd=None, seasonal=False, index='wine')
-# The residual of this model (17,1,20) indicates a significant value of 0 at lag 12 in the ACF
-# As well as a significant value of 0 at lag 17 in the PACF of the residuals which is a good sign telling us that the AR order is optimal
-# Thus I will try a model with (17,1,12) to see if we improve the performance
-# Best model yet : (17,1,12)
-# Best model yet 2 : (17,1,20) is more complex but does seem to have better performance
-# NB : Log-transformation improves the AIC (goodness of fit) and BIC (model complexity) a lot -1000 points
-# But it increases MAE and MSE error on the test set. This is a trade-off between goodness of fit and predictive power
-# Let's try split cross validation:
-eval_df = split_cross_validation(wine_df_decomp.observed, eval_df, start_cd[0], seasonal_order=None, seasonal=False, index='wine')
-print(eval_df)
+# Starting point : previous best model (3,1,20) by combining previous best AR and MA orders
+start_cd = (3,1,20) 
+evaluate_model_with_BoxJenkins(wine_train, wine_test, eval_df, start_cd, seasonal_start_cd=None, seasonal=False, index='wine')
+  
+# Best model seems to be
+# NB : Log-transformation 
 
 # Seasonal decomposition suggests underlying complex seasonal pattern 
-# Additionally: AR and MA orders are pretty high, suggesting the need for a SARIMA model
+# Additionally: MA order is pretty high, suggesting the need for a SARIMA model
 
 # Evaluate Stationarity of the seasonal component 
 # stationary = is_stationary_with_KPSS(wine_seasonal, significance_level=0.05)
