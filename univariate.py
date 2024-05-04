@@ -280,8 +280,67 @@ def forecast_model(data, train, test, forecast_steps, length, end_date, model=No
     plt.ylabel('Index value')
     plt.show()
 
-def cross_validation(data, order, seasonal_order=None, seasonal=False, index='wine'):
-    pass
+def split_cross_validation(data, eval_df, order, seasonal_order=None, seasonal=False, index='wine'):
+    # Not using blocked cross-validation because there is not enough data for sufficient blocks
+    # Using split cross validation instead with an 80/20 ratio at each split
+    mae_l = []
+    mse_l = []
+    rmse_l = []
+    mape_l = []
+    aic_l = []
+    bic_l = []
+
+    mae_l_bas = []
+    mse_l_bas = []
+    rmse_l_bas = []
+    mape_l_bas = []
+
+    mae_l_mean = []
+    mse_l_mean = []
+    rmse_l_mean = []
+    mape_l_mean = []
+    
+    splits = [0.5, 0.65, 0.85, 1.0]
+    for split in splits:
+        split_data = data[:int(split*len(data))]
+        train = split_data[:int(0.8*len(split_data))]
+        test = split_data[int(0.8*len(split_data)):]
+
+        fit_results, _ = create_model(train, order, seasonal_order, index)
+        yhat_test, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean, rmse, rmse_baseline, rmse_baseline_mean, mape, mape_baseline, mape_baseline_mean = test_model(test, fit_results, seasonal, index)
+
+        # Model Evaluation Metrics
+        mae_l.append(mae)
+        mse_l.append(mse)
+        rmse_l.append(rmse)
+        mape_l.append(mape)
+        aic_l.append(fit_results.aic)
+        bic_l.append(fit_results.bic)
+
+        # Baseline Evaluation Metrics
+        mae_l_bas.append(mae_baseline)
+        mse_l_bas.append(mse_baseline)
+        rmse_l_bas.append(rmse_baseline)
+        mape_l_bas.append(mape_baseline)
+
+        # Mean Evaluation Metrics
+        mae_l_mean.append(mae_baseline_mean)
+        mse_l_mean.append(mse_baseline_mean)
+        rmse_l_mean.append(rmse_baseline_mean)
+        mape_l_mean.append(mape_baseline_mean)
+
+    print("MAE Baseline:", np.mean(mae_l_bas))
+    print("MSE Baseline:", np.mean(mse_l_bas))
+    print("RMSE Baseline:", np.mean(rmse_l_bas))
+    print("MAPE % Baseline:", np.mean(mape_l_bas))
+    print("MAE Mean:", np.mean(mae_l_mean))
+    print("MSE Mean:", np.mean(mse_l_mean))
+    print("RMSE Mean:", np.mean(rmse_l_mean))
+    print("MAPE % Mean:", np.mean(mape_l_mean))
+
+    eval_df.loc[len(eval_df)] = [order, seasonal_order, np.mean(aic_l), np.mean(bic_l), np.mean(mae_l), np.mean(mse_l), np.mean(rmse_l), np.mean(mape_l)]
+
+    return eval_df
 
 ##### MAIN #####
 
@@ -364,6 +423,9 @@ start_cd = [(17,1,20)]
 # Best model yet 2 : (17,1,20) is more complex but does seem to have better performance
 # NB : Log-transformation improves the AIC (goodness of fit) and BIC (model complexity) a lot -1000 points
 # But it increases MAE and MSE error on the test set. This is a trade-off between goodness of fit and predictive power
+# Let's try split cross validation:
+eval_df = split_cross_validation(wine_df_decomp.observed, eval_df, start_cd[0], seasonal_order=None, seasonal=False, index='wine')
+print(eval_df)
 
 # Seasonal decomposition suggests underlying complex seasonal pattern 
 # Additionally: AR and MA orders are pretty high, suggesting the need for a SARIMA model
