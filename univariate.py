@@ -18,7 +18,7 @@ import statsmodels.api as sm
 
 # Links to understand more about SARIMA Parameters : 
 
-# https://en.wikipedia.org/w<iki/Box%E2%80%93Jenkins_method
+# https://en.wikipedia.org/wiki/Box%E2%80%93Jenkins_method
 # https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average
 # Paper to cite : https://otexts.com/fpp2/non-seasonal-arima.html#acf-and-pacf-plots
 
@@ -163,14 +163,9 @@ def evaluate_model_with_Plots(train, test, candidates, eval_df, seasonal=False, 
         
     return eval_df
 
-def evaluate_model_with_BoxJenkins(train, test, eval_df, start_cd, seasonal_start_cd=None, seasonal=False, index='wine'):
+def check_model_with_BoxJenkins(train, test, eval_df, start_cd, seasonal_start_cd=None, seasonal=False, index='wine'):
     # Test model
     model, train_residuals = create_model(train, start_cd, seasonal_start_cd, index)
-    yhat_test, _, _, _, _, _, _, _, _, _, _, _, _ = test_model(test, model, seasonal, index)
-    
-    # Compute Test Residuals
-    y_test = test
-    test_residuals = y_test - yhat_test
 
     # Plot Train Residuals - Does it follow a white noise pattern ?
     plt.plot(train_residuals, color="black", label="train residuals", linestyle=":")
@@ -182,19 +177,7 @@ def evaluate_model_with_BoxJenkins(train, test, eval_df, start_cd, seasonal_star
     plt.ylabel('Residual value')
     plt.show()
 
-    # Plot Test Residuals - Does it follow a white noise pattern ?
-    plt.plot(test_residuals, color="blue", label="test residuals", linestyle=":")
-    plt.axhline(y=0, color='r', linestyle='--')
-    plt.legend(loc='best')
-    plt.title(f'Model test residuals on {index} index test set')
-    plt.xticks([0, len(test_residuals)/2, len(test_residuals)-1])
-    plt.xlabel('Time')
-    plt.ylabel('Residual value')
-    plt.show()
-
     # Check ACF and PACF of Train Residuals
-
-    # Check ACF and PACF of Test Residuals
     if index=='wine':
         fig = plot_acf(train_residuals, color = "blue", lags=len(train_residuals)-1)
         plt.title(f'Index {index} model train residuals ACF')
@@ -205,20 +188,20 @@ def evaluate_model_with_BoxJenkins(train, test, eval_df, start_cd, seasonal_star
         plt.show()
 
     elif index=='watch':
-        fig = plot_acf(train_residuals, color = "blue", lags=41) # ACF cannot be longer than testing data.
+        fig = plot_acf(train_residuals, color = "blue", lags=len(train_residuals)-1) # ACF cannot be longer than testing data.
         plt.title(f'Index {index} model train residuals ACF 50 lags')
         plt.show()
 
-        fig = plot_pacf(test_residuals, color = "green", lags=20) # PACF cannot be longer than 50% of the data
+        fig = plot_pacf(train_residuals, color = "green", lags=int(len(train_residuals)/2)-1) # PACF cannot be longer than 50% of the data
         plt.title(f'Index {index} model train residuals PACF 26 lags')
         plt.show()
 
     else: # index=='art'
-        fig = plot_acf(test_residuals, color = "blue", lags=109) # ACF cannot be longer than testing data.
+        fig = plot_acf(train_residuals, color = "blue", lags=len(train_residuals)-1) # ACF cannot be longer than testing data.
         plt.title(f'Index {index} model train residuals ACF 100+ lags')
         plt.show()
 
-        fig = plot_pacf(test_residuals, color = "green", lags=55) # PACF cannot be longer than 50% of the data
+        fig = plot_pacf(train_residuals, color = "green", lags=int(len(train_residuals)/2)-1) # PACF cannot be longer than 50% of the data
         plt.title(f'Index {index} model train residuals PACF 55 lags')
         plt.show()
 
@@ -230,22 +213,13 @@ def evaluate_model_with_BoxJenkins(train, test, eval_df, start_cd, seasonal_star
         is_white_noise = is_white_noise_with_LjungBox(train_residuals, significance_level=0.05)
         print(f"Are the train residuals white noise? {is_white_noise}")
 
-        is_white_noise = is_white_noise_with_LjungBox(test_residuals, significance_level=0.05)
-        print(f"Are the test residuals white noise? {is_white_noise}")
-
     elif index=='watch':
         is_white_noise = is_white_noise_with_LjungBox(train_residuals, significance_level=0.05, lags=41)
         print(f"Are the train residuals white noise? {is_white_noise}")
 
-        is_white_noise = is_white_noise_with_LjungBox(test_residuals, significance_level=0.05, lags=41)
-        print(f"Are the test residuals white noise? {is_white_noise}")
-
     else: # index=='art'
         is_white_noise = is_white_noise_with_LjungBox(train_residuals, significance_level=0.05, lags=41)
         print(f"Are the train residuals white noise? {is_white_noise}")
-
-        is_white_noise = is_white_noise_with_LjungBox(test_residuals, significance_level=0.05, lags=41)
-        print(f"Are the test residuals white noise? {is_white_noise}")
 
 def forecast_model(data, train, test, forecast_steps, length, end_date, model=None, seasonal=False, index='wine'):
     if model == None and seasonal == False: # ARIMA Model
@@ -344,7 +318,7 @@ def generate_arima_candidates(p, d, q):
 # Data is adjusted for inflation and decomposed into trend, seasonality and residuals
 wine_df_decomp, watch_df_decomp, art_dfdecomp = preprocessing.main(univariate=True)
 
-## Evaluating stationarity of the data and the ARIMA Parameters ##
+## Evaluating stationarity of the data for the differencing parameter d ##
 
 # # Data is non-stationary, so we apply first order differencing
 wine_df_diff = wine_df_decomp.observed.diff().dropna()
@@ -374,15 +348,16 @@ art_df_diff = art_dfdecomp.observed.diff().dropna()
 # stationary = is_stationary_with_ADF(art_df_diff, significance_level=0.05)
 # print(f"Is the data stationary according to the ADF Test? {stationary}") # True
 
-## SARIMA (p,d,q)*(P,D,Q)**M Model Forecasting ##
+## (S)ARIMA (p,d,q)*(P,D,Q)**M Model Forecasting ##
 
 # First order differencing makes the data stationary so I will set my d = 1 as confirmed by ADF + KPSS tests
 
 # Methodology : 
-# First determine a good ARIMA Model using the ACF and PACF Plots
-# Then use the Box-Jenkins Methodology to determine the optimal ARIMA model by choosing an autocorrellation lag close to 0 for residuals
-# Finally if there is an underlying complex seasonal pattern, use SARIMA to capture it
-# If it improves accuracy, then optimize the SARIMA model with the Box-Jenkins Methodology on the residual + seasonal component
+# First determine good ARIMA Model candidates using the ACF and PACF Plots
+# Use split-cross validation to evaluate the candidate models on the data and pick the best one
+# Then use the box-jenkins methodology to see if you can further improve the ARIMA model by checking the training residuals
+# If lag orders are high, and/or performance is not that good while still having white noise residuals, and the seasonal decomposition shows seasonality
+# Then do the same iterative process for a SARIMA model
 
 # WINE INDEX DATA FORECASTING
 
@@ -392,7 +367,6 @@ wine_test = wine_df_decomp.observed[int(0.8*len(wine_df_decomp.observed)):]
 wine_seasonal = wine_df_decomp.seasonal
 eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
 
-# Box Jenkins Methodology to determine the optimal ARIMA model
 # Evaluate Wine ARIMA model with ACF + PACF plots
 # Candidates are chosen based on the ACF and PACF plots
 # p, d, q = [0, 3, 17], [1], [0, 3, 12, 20]
@@ -400,19 +374,15 @@ eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE",
 # eval_df = evaluate_model_with_Plots(wine_train, wine_test, candidates, eval_df, index='wine')
 # print(eval_df)
 
-# Best model seems to be (3,1,20) 
+# Best model seems to be (3,1,20) within the candidates
 # We still do manage to be better than the baseline but worse than the mean so this is at least one success
-
-# However this suggests that the optimal cannot be precisely determined by the ACF and PACF plots 
-# Thus we need to look at the residuals and the Box-Jenkins model diagnostic to determine the optimal model 
+# We need to apply the Box-Jenkins Methodology to see if there is still room for improvement
 
 # Evaluate Wine ARIMA model with Box-Jenkins model diagnostic
-# Starting point : previous best model (3,1,20) by combining previous best AR and MA orders
-start_cd = (3,1,20) 
-evaluate_model_with_BoxJenkins(wine_train, wine_test, eval_df, start_cd, seasonal_start_cd=None, seasonal=False, index='wine')
+arima_wine = (3,1,20) # Optimal
+# check_model_with_BoxJenkins(wine_train, wine_test, eval_df, arima_wine, seasonal_start_cd=None, seasonal=False, index='wine')
   
-# Best model seems to be
-# NB : Log-transformation 
+# NB : Log-transformation improves AIC and BIC but reduces performance on all error metrics.
 
 # Seasonal decomposition suggests underlying complex seasonal pattern 
 # Additionally: MA order is pretty high, suggesting the need for a SARIMA model
@@ -424,22 +394,13 @@ evaluate_model_with_BoxJenkins(wine_train, wine_test, eval_df, start_cd, seasona
 # print(f"Is the data stationary according to the ADF Test? {stationary}") # True
 # We can set our order D to 0 since the seasonal component is stationary
 
-# By looking at the ACF and PACF plots of the seasonal component, there is a significant lag at 13 but none beyond
-# in the PACF, thus we can set our seasonal AR order P to 13.
-# In the ACF, there is a significant lag at 71, but none beyond, thus we can set Q to 71.
-# However, 71 is a pretty big value, thus we can also set Q to 12, which is the maximum positive value for a lag
-# outside the significance region. Or 6 which is the maximum negative value for a lag outside the significance region.
-# The period in the ACF seems to repeat itself every 9 lags, thus we can set our M to be 9.
-# But we will put just above the AR and MA order of the ARIMA to avoid duplicate lags
-seasonal_start_cd = [(), (13,0,6,9)] # Seasonal order needs to be > to AR and MA order of ARIMA
+# Determine the seasonal order of the SARIMA model through the ACF and PACF plots of the seasonal component
+sarima_wine = [(), (13,0,6,9)] # Seasonal order needs to be > to AR and MA order of ARIMA
 # evaluate_model_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df, seasonal_start_cd, seasonal=True, index='wine')
 
 # Create optimal (S)ARIMA model
-optimal = start_cd[0]
-optimal_seasonal = seasonal_start_cd[0]
-optimal_seasonal_order = seasonal_start_cd[1]
-# wine_model = create_model(wine_train, optimal, seasonal_order=None, index='wine') # Only run once to save the optimal model
-# wine_model = create_model(wine_train, optimal_seasonal, optimal_seasonal_order, index='wine') # Only run once to save the optimal model
+# wine_model = create_model(wine_train, arima_wine, seasonal_order=None, index='wine') # Only run once to save the optimal model
+# wine_model_seasonal = create_model(wine_train, sarima_wine[0], sarima_wine[1], index='wine') # Only run once to save the optimal model
 
 # Now that the optimal has been found, use it to forecast
 short_term = wine_test.shape[0] + 12 # 1 year
