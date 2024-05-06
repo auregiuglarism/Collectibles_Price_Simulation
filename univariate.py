@@ -134,23 +134,22 @@ def test_model(test, model=None, seasonal=False, index='wine'): # Testing data
 
     return yhat_test, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean, rmse, rmse_baseline, rmse_baseline_mean, mape, mape_baseline, mape_baseline_mean
 
-def evaluate_model_with_Plots(train, test, candidates, eval_df, seasonal=False, seasonal_order=None, index='wine'): 
+def evaluate_model_with_Plots(data, candidates, eval_df, seasonal=False, index='wine', arima_order=None): 
     # Take the model with the lowest eval metrics and errors
     for candidate in candidates:
         if seasonal == False:
             # Split cross validation
-            aic, bic, mae, mse, rmse, mape, mae_bas, mse_bas, rmse_bas, mape_bas, mae_mean, mse_mean, rmse_mean, mape_mean = split_cross_validation(train, candidate, index, seasonal_order=None, seasonal=False)
+            aic, bic, mae, mse, rmse, mape, mae_bas, mse_bas, rmse_bas, mape_bas, mae_mean, mse_mean, rmse_mean, mape_mean = split_cross_validation(data, candidate, index, None, seasonal)
             
             # Store evaluation information (those are already avg calculated in the split cross validation function)
-            eval_df.loc[len(eval_df)] = [candidate, seasonal_order, aic, bic, mae, mse, rmse, mape]
+            eval_df.loc[len(eval_df)] = [candidate, None, aic, bic, mae, mse, rmse, mape]
+        
         else:
-            cd_fit_results = ARIMAResults.load(f'models\{index}_sarima.pkl')
-
             # Split cross validation
-            aic, bic, mae, mse, rmse, mape, mae_bas, mse_bas, rmse_bas, mape_bas, mae_mean, mse_mean, rmse_mean, mape_mean = split_cross_validation(train, candidate, index, seasonal_order=None, seasonal=False)
+            aic, bic, mae, mse, rmse, mape, mae_bas, mse_bas, rmse_bas, mape_bas, mae_mean, mse_mean, rmse_mean, mape_mean = split_cross_validation(data, order=arima_order, index=index, seasonal_order=candidate, seasonal=seasonal)
 
             # Store evaluation information (those are already avg calculated in the split cross validation function)
-            eval_df.loc[len(eval_df)] = [candidate, seasonal_order, aic, bic, mae, mse, rmse, mape]
+            eval_df.loc[len(eval_df)] = [arima_order, candidate, aic, bic, mae, mse, rmse, mape]
         
     print("MAE Baseline:", mae_bas)
     print("MSE Baseline:", mse_bas)
@@ -163,9 +162,9 @@ def evaluate_model_with_Plots(train, test, candidates, eval_df, seasonal=False, 
         
     return eval_df
 
-def check_model_with_BoxJenkins(train, test, eval_df, start_cd, seasonal_start_cd=None, seasonal=False, index='wine'):
+def check_model_with_BoxJenkins(train, start_cd, seasonal_start_cd=None, index='wine'):
     # Test model
-    model, train_residuals = create_model(train, start_cd, seasonal_start_cd, index)
+    _, train_residuals = create_model(train, start_cd, seasonal_start_cd, index)
 
     # Plot Train Residuals - Does it follow a white noise pattern ?
     plt.plot(train_residuals, color="black", label="train residuals", linestyle=":")
@@ -221,7 +220,7 @@ def check_model_with_BoxJenkins(train, test, eval_df, start_cd, seasonal_start_c
         is_white_noise = is_white_noise_with_LjungBox(train_residuals, significance_level=0.05, lags=41)
         print(f"Are the train residuals white noise? {is_white_noise}")
 
-def forecast_model(data, train, test, forecast_steps, length, end_date, model=None, seasonal=False, index='wine'):
+def forecast_model(data, test, forecast_steps, length, end_date, model=None, seasonal=False, index='wine'):
     if model == None and seasonal == False: # ARIMA Model
         model = ARIMAResults.load(f'models\{index}_arima.pkl')
     elif model == None and seasonal == True: # SARIMA Model
@@ -276,7 +275,7 @@ def split_cross_validation(data, order, index='wine', seasonal_order=None, seaso
         split_data = data[:int(split*len(data))]
         train = split_data[:int(0.8*len(split_data))]
         test = split_data[int(0.8*len(split_data)):]
-
+        
         fit_results, _ = create_model(train, order, seasonal_order, index)
         _, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean, rmse, rmse_baseline, rmse_baseline_mean, mape, mape_baseline, mape_baseline_mean = test_model(test, fit_results, seasonal, index)
 
@@ -303,12 +302,15 @@ def split_cross_validation(data, order, index='wine', seasonal_order=None, seaso
     # Return all eval metrics
     return np.mean(aic_l), np.mean(bic_l), np.mean(mae_l), np.mean(mse_l), np.mean(rmse_l), np.mean(mape_l), np.mean(mae_l_bas), np.mean(mse_l_bas), np.mean(rmse_l_bas), np.mean(mape_l_bas), np.mean(mae_l_mean), np.mean(mse_l_mean), np.mean(rmse_l_mean), np.mean(mape_l_mean)
 
-def generate_arima_candidates(p, d, q):
+def generate_arima_candidates(p, d, q, seasonal=False, m=0):
   candidates = []
   for p_val in p:
     for d_val in d:
       for q_val in q:
-        candidates.append((p_val, d_val, q_val))
+        if seasonal == True:
+            candidates.append((p_val, d_val, q_val, m))
+        else:
+            candidates.append((p_val, d_val, q_val))
   return candidates
 
 ##### MAIN #####
@@ -361,7 +363,7 @@ art_df_diff = art_dfdecomp.observed.diff().dropna()
 
 # WINE INDEX DATA FORECASTING
 
-# Initial Split into train and test
+# Initial Split into train and test (for after split cross validation)
 wine_train = wine_df_decomp.observed[:int(0.8*len(wine_df_decomp.observed))]
 wine_test = wine_df_decomp.observed[int(0.8*len(wine_df_decomp.observed)):]
 wine_seasonal = wine_df_decomp.seasonal
@@ -371,21 +373,21 @@ eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE",
 # Candidates are chosen based on the ACF and PACF plots
 # p, d, q = [0, 3, 17], [1], [0, 3, 12, 20]
 # candidates = generate_arima_candidates(p, d, q)
-# eval_df = evaluate_model_with_Plots(wine_train, wine_test, candidates, eval_df, index='wine')
+# eval_df = evaluate_model_with_Plots(wine_df_decomp.observed, candidates, eval_df, index='wine')
 # print(eval_df)
 
-# Best model seems to be (3,1,20) within the candidates
+# Best model seems to be (3,1,3) within the candidates
 # We still do manage to be better than the baseline but worse than the mean so this is at least one success
 # We need to apply the Box-Jenkins Methodology to see if there is still room for improvement
 
 # Evaluate Wine ARIMA model with Box-Jenkins model diagnostic
-arima_wine = (3,1,20) # Optimal
-# check_model_with_BoxJenkins(wine_train, wine_test, eval_df, arima_wine, seasonal_start_cd=None, seasonal=False, index='wine')
+arima_wine = (3,1,3) 
+# check_model_with_BoxJenkins(wine_train, arima_wine, seasonal_start_cd=None, index='wine')
+# Residuals are white noise.
   
 # NB : Log-transformation improves AIC and BIC but reduces performance on all error metrics.
 
 # Seasonal decomposition suggests underlying complex seasonal pattern 
-# Additionally: MA order is pretty high, suggesting the need for a SARIMA model
 
 # Evaluate Stationarity of the seasonal component 
 # stationary = is_stationary_with_KPSS(wine_seasonal, significance_level=0.05)
@@ -394,9 +396,17 @@ arima_wine = (3,1,20) # Optimal
 # print(f"Is the data stationary according to the ADF Test? {stationary}") # True
 # We can set our order D to 0 since the seasonal component is stationary
 
-# Determine the seasonal order of the SARIMA model through the ACF and PACF plots of the seasonal component
-sarima_wine = [(), (13,0,6,9)] # Seasonal order needs to be > to AR and MA order of ARIMA
-# evaluate_model_with_BoxJenkins(wine_train, wine_test, start_cd, eval_df, seasonal_start_cd, seasonal=True, index='wine')
+# Seasonality pattern repeating every 12 lags, thus set m=12. (ACF of the seasonal component)
+
+# Candidates are chosen based on the ACF and PACF plots
+P, D, Q = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13], [0], [1, 2, 4, 5, 6, 7, 8, 11, 12, 13]
+seasonal_candidates = generate_arima_candidates(P, D, Q, seasonal=True, m=12)
+eval_df = evaluate_model_with_Plots(wine_df_decomp.observed, seasonal_candidates, eval_df, seasonal=True, index='wine', arima_order=arima_wine)
+print(eval_df)
+
+sarima_wine = [(3,1,3), (13,0,6,12)] # m needs to be > to AR and MA order of ARIMA
+# check_model_with_BoxJenkins(wine_train, sarima_wine[0], sarima_wine[1], index='wine')
+# Residuals are white noise.
 
 # Create optimal (S)ARIMA model
 # wine_model = create_model(wine_train, arima_wine, seasonal_order=None, index='wine') # Only run once to save the optimal model
@@ -412,7 +422,7 @@ ref_start = wine_df_decomp.observed.index[-1] # "2023-12-31"
 end_short = "2024-12-31"
 end_medium = "2028-12-31"
 end_long = "2037-06-30"
-# forecast_model(wine_df_decomp.observed, wine_train, wine_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='wine')
+# forecast_model(wine_df_decomp.observed, wine_test, long_term, "Long", end_date=end_long, model=None, seasonal=True, index='wine')
 
 # WATCH INDEX DATA FORECASTING
 # Split data into train and test
