@@ -81,6 +81,8 @@ def create_model(train, order, seasonal_order=None, index='wine'):
                 enforce_invertibility=True,
                 seasonal_order=seasonal_order) 
         
+        model.initialize_approximate_diffuse() # Avoid LU Decomposition error when searching for optimal parameters
+        
         fit_results = model.fit()
         fit_results.save(f'models\{index}_sarima.pkl') # Comment this when evaluating multiple models
 
@@ -399,7 +401,7 @@ arima_wine = (3,1,3)
 # Seasonality pattern repeating every 12 lags, thus set m=12. (ACF of the seasonal component)
 
 # Candidates are chosen based on the ACF and PACF plots
-P, D, Q = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13], [0], [1, 2, 4, 5, 6, 7, 8, 11, 12, 13]
+P, D, Q = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13], [0], [1, 2, 4, 5, 6, 7, 12]
 seasonal_candidates = generate_arima_candidates(P, D, Q, seasonal=True, m=12)
 eval_df = evaluate_model_with_Plots(wine_df_decomp.observed, seasonal_candidates, eval_df, seasonal=True, index='wine', arima_order=arima_wine)
 print(eval_df)
@@ -591,28 +593,6 @@ end_long = "2051-02-01"
 # plt.xlabel('Time')
 # plt.ylabel('Absolute Change in Index')
 # plt.xticks([0, len(art_df_diff)/2, len(art_df_diff)-1])
-# plt.show()
-
-## Plotting Smoothed Data ##
-# plt.plot(wine_df_smooth)
-# plt.title('Wine Index Differenced Smoothed')
-# plt.xlabel('Time')
-# plt.ylabel('Absolute Change in Index (30 Day Moving Average)')
-# plt.xticks([0, len(wine_df_smooth)/2, len(wine_df_smooth)-1])
-# plt.show()
-
-# plt.plot(watch_df_smooth)
-# plt.title('Watch Index Differenced Smoothed')
-# plt.xlabel('Time')
-# plt.ylabel('Absolute Change in Index (30 Day Moving Average)')
-# plt.xticks([0, len(watch_df_smooth)/2, len(watch_df_smooth)-1])
-# plt.show()
-
-# plt.plot(art_df_smooth)
-# plt.title('Art Index Differenced Smoothed')
-# plt.xlabel('Time')
-# plt.ylabel('Absolute Change in Index (30 Day Moving Average)')
-# plt.xticks([0, len(art_df_smooth)/2, len(art_df_smooth)-1])
 # plt.show()
 
 # Data is stationary after first order differencing

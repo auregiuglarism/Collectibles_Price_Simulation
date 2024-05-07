@@ -10,8 +10,6 @@ from statsmodels.tsa.stattools import kpss
 import warnings
 # warnings.filterwarnings("ignore") # Uncomment to clean terminal output from all warnings
 
-# TODO : Evaluate whether the should be decomposed multiplicatively or additively + FIND PAPER TO SUPPORT
-# TODO : Find paper to support the use of the KPSS test for stationarity
 # TODO : REDO the plots for the data in all preprocessing steps to correct the x-axis labels
 
 ##### INDEX DATA #####
@@ -432,6 +430,7 @@ def main(univariate=True):
     # plt.xlabel('Year')
     # plt.ylabel('Rate')
     # plt.title('EUR to GBP (Yearly Average)')
+    # plt.xticks([0, len(GBP_rates)/2, len(GBP_rates)-1])
     # plt.show()
 
     # Get EUR to USD rates
@@ -440,6 +439,7 @@ def main(univariate=True):
     # plt.xlabel('Year')
     # plt.ylabel('Rate')
     # plt.title('EUR to USD (Yearly Average)')
+    # plt.xticks([0, len(USD_rates)/2, len(USD_rates)-1])
     # plt.show()
 
     # Get GBP to USD rates
@@ -448,6 +448,7 @@ def main(univariate=True):
     # plt.xlabel('Year')
     # plt.ylabel('Rate')
     # plt.title('GBP to USD (Yearly Average)')
+    # plt.xticks([0, len(USD2_rates)/2, len(USD2_rates)-1])
     # plt.show()
 
     # Watch EUR
@@ -456,6 +457,7 @@ def main(univariate=True):
     # plt.xlabel('Date')
     # plt.ylabel('Index Value (Monthly Average)')
     # plt.title('(Custom Weighted) Watch Index Monthly Average EUR')
+    # plt.xticks([0, len(watch_df_EUR)/2, len(watch_df_EUR)-1])
     # plt.show()
 
     # EUR was created in 1999, so we need to convert to USD (Not inflation adjusted)
@@ -464,6 +466,7 @@ def main(univariate=True):
     # plt.xlabel('Date')
     # plt.ylabel('Index Value (Monthly Average)')
     # plt.title('(Custom Weighted) Watch Index Monthly Average USD')
+    # plt.xticks([0, len(watch_df)/2, len(watch_df)-1])
     # plt.show()
 
     # Wine GBP
@@ -472,6 +475,7 @@ def main(univariate=True):
     # plt.xlabel('Date')
     # plt.ylabel('Index Value')
     # plt.title('Liv-Ex 100 Index (Monthly Average)')
+    # plt.xticks([0, len(wine_df_GBP)/2, len(wine_df_GBP)-1])
     # plt.show()
 
     # Wine needs to be converted to USD (Not inflation adjusted)
@@ -480,6 +484,7 @@ def main(univariate=True):
     # plt.xlabel('Date')
     # plt.ylabel('Index Value')
     # plt.title('Liv-Ex 100 Index (Monthly Average) USD')
+    # plt.xticks([0, len(wine_df)/2, len(wine_df)-1])
     # plt.show()
 
     # Art GBP (already inflation adjusted)
@@ -488,6 +493,7 @@ def main(univariate=True):
     # plt.xlabel('Date')
     # plt.ylabel('Index Value')
     # plt.title('All Art Index Family (Monthly Average)')
+    # plt.xticks([0, len(art_df_GBP)/2, len(art_df_GBP)-1])
     # plt.show()
 
     # Art needs to be converted to USD
@@ -496,6 +502,7 @@ def main(univariate=True):
     # plt.xlabel('Date')
     # plt.ylabel('Index Value')
     # plt.title('All Art Index Family (Monthly Average) USD')
+    # plt.xticks([0, len(art_df)/2, len(art_df)-1])
     # plt.show()
 
     # CPI Index United States (USD) # Seasonally adjusted
@@ -503,6 +510,7 @@ def main(univariate=True):
     # plt.plot(cpi_df['Date'], cpi_df['CPI_Index'])
     # plt.xlabel('Date')
     # plt.ylabel('Index Value')
+    # plt.xticks([0, len(cpi_df)/2, len(cpi_df)-1])
     # plt.title('Monthly CPI_Index (Inflation) United States')
     # plt.show()
 
@@ -511,6 +519,7 @@ def main(univariate=True):
     # plt.plot(crypto_df['Date'], crypto_df['Market cap (monthly)'])
     # plt.xlabel('Date')
     # plt.ylabel('Market cap (USD)')
+    # plt.xticks([0, len(crypto_df)/2, len(crypto_df)-1])
     # plt.title('Global Crypto Marketcap (Monthly Average)')
     # plt.show()
 
@@ -519,6 +528,7 @@ def main(univariate=True):
     # plt.plot(gold_df['Date'], gold_df['Gold Price (monthly)'])
     # plt.xlabel('Date')
     # plt.ylabel('Gold Price (USD)')
+    # plt.xticks([0, len(gold_df)/2, len(gold_df)-1])
     # plt.title('Gold Prices (Monthly Average)')
     # plt.show()
 
@@ -533,6 +543,7 @@ def main(univariate=True):
     # plt.plot(sp500_df['Date'], sp500_df['Nominal'])
     # plt.xlabel('Date')
     # plt.ylabel('S&P 500 Index Value (NOMINAL)')
+    # plt.xticks([0, len(sp500_df)/2, len(sp500_df)-1])
     # plt.title('S&P 500 Monthly (USD) NOT Inflation Adjusted')
     # plt.show()
 
@@ -541,6 +552,7 @@ def main(univariate=True):
     # plt.plot(bond_yield_df['Date'], bond_yield_df['Rate_in_Percent'])
     # plt.xlabel('Date')
     # plt.ylabel('10 Year Bond Yield (%)')
+    # plt.xticks([0, len(bond_yield_df)/2, len(bond_yield_df)-1])
     # plt.title('United States 10-Year Bond Yield (Monthly) USD (%)')
     # plt.show()
 
@@ -589,7 +601,7 @@ def main(univariate=True):
     # print("TEST FOR STATIONARITY:", is_stationary_with_kpss(sp500_df_decomp.observed)) # Not stationary at 5% significance level FALSE
     # print("TEST FOR STATIONARITY:", is_stationary_with_kpss(cpi_df_decomp.observed)) # Not stationary at 5% significance level FALSE
 
-    ## Log transform the data and create final DF ##
+    ## Create final DF ##
     # Reminder: Trend, Seasonal and Residual aren't on a Log Scale
     # NaN values are present for trend and residual due to built-in filtering in decomposition
 
