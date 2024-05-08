@@ -401,10 +401,10 @@ arima_wine = (3,1,3)
 # Seasonality pattern repeating every 12 lags, thus set m=12. (ACF of the seasonal component)
 
 # Candidates are chosen based on the ACF and PACF plots
-P, D, Q = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13], [0], [1, 2, 4, 5, 6, 7, 12]
-seasonal_candidates = generate_arima_candidates(P, D, Q, seasonal=True, m=12)
-eval_df = evaluate_model_with_Plots(wine_df_decomp.observed, seasonal_candidates, eval_df, seasonal=True, index='wine', arima_order=arima_wine)
-print(eval_df)
+# P, D, Q = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13], [0], [1, 2, 4, 5, 6, 7, 12]
+# seasonal_candidates = generate_arima_candidates(P, D, Q, seasonal=True, m=12)
+# eval_df = evaluate_model_with_Plots(wine_df_decomp.observed, seasonal_candidates, eval_df, seasonal=True, index='wine', arima_order=arima_wine)
+# print(eval_df)
 
 sarima_wine = [(3,1,3), (13,0,6,12)] # m needs to be > to AR and MA order of ARIMA
 # check_model_with_BoxJenkins(wine_train, sarima_wine[0], sarima_wine[1], index='wine')
@@ -424,7 +424,7 @@ ref_start = wine_df_decomp.observed.index[-1] # "2023-12-31"
 end_short = "2024-12-31"
 end_medium = "2028-12-31"
 end_long = "2037-06-30"
-# forecast_model(wine_df_decomp.observed, wine_test, long_term, "Long", end_date=end_long, model=None, seasonal=True, index='wine')
+forecast_model(wine_df_decomp.observed, wine_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='wine')
 
 # WATCH INDEX DATA FORECASTING
 # Split data into train and test
@@ -654,13 +654,13 @@ end_long = "2051-02-01"
 # plt.title('Wine Seasonality ACF 80 lags')
 # plt.show() 
 
-# fig = plot_pacf(wine_seasonal, color = "green", lags=134) # PACF cannot be longer than 50% of the data
-# plt.title('Wine Seasonality PACF 134 lags')
-# plt.show()
+fig = plot_pacf(wine_seasonal, color = "green", lags=134) # PACF cannot be longer than 50% of the data
+plt.title('Wine Seasonality PACF 134 lags')
+plt.show()
 
-# fig = plot_pacf(wine_seasonal, color = "green", lags=50) # Plotting most interesting subset of the PACF
-# plt.title('Wine Seasonality PACF 50 lags')
-# plt.show()
+fig = plot_pacf(wine_seasonal, color = "green", lags=50) # Plotting most interesting subset of the PACF
+plt.title('Wine Seasonality PACF 50 lags')
+plt.show()
 
 # fig = plot_acf(watch_seasonal, color = "blue", lags=len(watch_seasonal)-1) 
 # plt.title('Watch Seasonality ACF 200+ lags')
