@@ -190,20 +190,28 @@ def check_model_with_BoxJenkins(train, start_cd, seasonal_start_cd=None, index='
 
     elif index=='watch':
         fig = plot_acf(train_residuals, color = "blue", lags=len(train_residuals)-1) # ACF cannot be longer than testing data.
-        plt.title(f'Index {index} model train residuals ACF 50 lags')
+        plt.title(f'Index {index} model train residuals ACF lags')
         plt.show()
 
         fig = plot_pacf(train_residuals, color = "green", lags=int(len(train_residuals)/2)-1) # PACF cannot be longer than 50% of the data
-        plt.title(f'Index {index} model train residuals PACF 26 lags')
+        plt.title(f'Index {index} model train residuals PACF lags')
         plt.show()
 
     else: # index=='art'
         fig = plot_acf(train_residuals, color = "blue", lags=len(train_residuals)-1) # ACF cannot be longer than testing data.
-        plt.title(f'Index {index} model train residuals ACF 100+ lags')
+        plt.title(f'Index {index} model train residuals ACF lags')
+        plt.show()
+
+        fig = plot_acf(train_residuals, color = "blue", lags=50) # Interesting part
+        plt.title(f'Index {index} model train residuals ACF lags Zoomed')
         plt.show()
 
         fig = plot_pacf(train_residuals, color = "green", lags=int(len(train_residuals)/2)-1) # PACF cannot be longer than 50% of the data
-        plt.title(f'Index {index} model train residuals PACF 55 lags')
+        plt.title(f'Index {index} model train residuals PACF lags')
+        plt.show()
+
+        fig = plot_pacf(train_residuals, color = "green", lags=50) # Interesting part
+        plt.title(f'Index {index} model train residuals PACF lags Zoomed')
         plt.show()
 
     # Perform Ljung-Box Test on Residuals to test if they are white noise/independently distributed
@@ -320,14 +328,14 @@ def generate_arima_candidates(p, d, q, seasonal=False, m=0):
 ## Load the data from global pre-processing.py ##
 
 # Data is adjusted for inflation and decomposed into trend, seasonality and residuals
-wine_df_decomp, watch_df_decomp, art_dfdecomp = preprocessing.main(univariate=True)
+wine_df_decomp, watch_df_decomp, art_df_decomp = preprocessing.main(univariate=True)
 
 ## Evaluating stationarity of the data for the differencing parameter d ##
 
 # # Data is non-stationary, so we apply first order differencing
 wine_df_diff = wine_df_decomp.observed.diff().dropna()
 watch_df_diff = watch_df_decomp.observed.diff().dropna()
-art_df_diff = art_dfdecomp.observed.diff().dropna()
+art_df_diff = art_df_decomp.observed.diff().dropna()
 
 # NB The data exhibits WAY better stationary after first order differencing
 # Smoothing the data with a 30 day moving average messes (for some reason) the stationarity of the data.
@@ -386,8 +394,6 @@ eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE",
 arima_wine = (3,1,3) 
 # check_model_with_BoxJenkins(wine_train, arima_wine, seasonal_start_cd=None, index='wine')
 # Residuals are white noise.
-  
-# NB : Log-transformation improves AIC and BIC but reduces performance on all error metrics.
 
 # Seasonal decomposition suggests underlying complex seasonal pattern 
 
@@ -406,9 +412,8 @@ arima_wine = (3,1,3)
 # eval_df = evaluate_model_with_Plots(wine_df_decomp.observed, seasonal_candidates, eval_df, seasonal=True, index='wine', arima_order=arima_wine)
 # print(eval_df)
 
-sarima_wine = [(3,1,3), (13,0,6,12)] # m needs to be > to AR and MA order of ARIMA
+sarima_wine = [(3,1,3), ()] # m needs to be > to AR and MA order of ARIMA
 # check_model_with_BoxJenkins(wine_train, sarima_wine[0], sarima_wine[1], index='wine')
-# Residuals are white noise.
 
 # Create optimal (S)ARIMA model
 # wine_model = create_model(wine_train, arima_wine, seasonal_order=None, index='wine') # Only run once to save the optimal model
@@ -424,7 +429,7 @@ ref_start = wine_df_decomp.observed.index[-1] # "2023-12-31"
 end_short = "2024-12-31"
 end_medium = "2028-12-31"
 end_long = "2037-06-30"
-forecast_model(wine_df_decomp.observed, wine_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='wine')
+# forecast_model(wine_df_decomp.observed, wine_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='wine')
 
 # WATCH INDEX DATA FORECASTING
 # Split data into train and test
@@ -433,34 +438,19 @@ watch_test = watch_df_decomp.observed[int(0.8*len(watch_df_decomp.observed)):]
 watch_seasonal = watch_df_decomp.seasonal
 eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
 
-# Box Jenkins Methodology to determine the optimal ARIMA model
 # Evaluate Watch ARIMA model with ACF + PACF plots
 # Candidates are chosen based on the ACF and PACF plots
-# candidates = [(0,1,1), (0,1,6), (2,1,0), (37,1,0), (37,1,1), (37,1,6), (2,1,6), (2,1,1)]
-# eval_df = evaluate_model_with_Plots(watch_train, watch_test, candidates, eval_df, index='watch')
+# p, d, q = [0, 1, 2, 36, 37], [1], [0, 1, 3, 5, 6]
+# candidates = generate_arima_candidates(p, d, q)
+# eval_df = evaluate_model_with_Plots(watch_df_decomp.observed, candidates, eval_df, index='watch')
 # print(eval_df)
 
-# The best model seems to be (37,1,6) if we want a simpler model (37,1,0)
-# They are both penalized by the high AR order, however those with low AR order < 10 really are not good
-
 # Evaluate Watch ARIMA model with Box-Jenkins model diagnostic
-# Starting point : previous best model (37,1,6)
-start_cd = [(37,1,9)] 
-# evaluate_model_with_BoxJenkins(watch_train, watch_test, start_cd, eval_df, seasonal_start_cd=None, seasonal=False, index='watch')
-# The residual of this model exhibits a value of 0 at lag 9 in the ACF
-# Since this is the residual of the model, we want to take the residual closest to 0.
-# Thus set my MA order to 9. Same logic for the AR order by setting it to 15 when looking at the PACF.
-# There are conflicting results: The ACF plot show that some of the autocorrelation has been captured
-# The residual analysis shows that its a bit closer to random noise
-# However it increased the test set error and model complexity.
-# Best model yet : (15,1,9) exhibits the best performance while keeping the model simple
-# Best model yet 2 : (37,1,9) is more complex but does seem to have better performance with residuals being closer to random noise.
-# NB : Log transformation improves all the evaluation metrics but makes residuals less white noise.
-# Thus seeing how the model seems to capture less the structure of the data with the log-transformation
-# Improvement on the test set might just be due to chance.
+arima_watch = (2,1,3) 
+# check_model_with_BoxJenkins(watch_train, arima_watch, seasonal_start_cd=None, index='watch')
+# Residuals are white noise.
 
 # Seasonal decomposition suggests underlying complex seasonal pattern 
-# Additionally: AR and MA orders are pretty high, suggesting the need for a SARIMA model
 
 # Evaluate Stationarity of the seasonal component 
 # stationary = is_stationary_with_KPSS(watch_seasonal, significance_level=0.05)
@@ -469,21 +459,20 @@ start_cd = [(37,1,9)]
 # print(f"Is the data stationary according to the ADF Test? {stationary}") # True
 # We can set our order D to 0 since the seasonal component is stationary
 
-# By looking at the ACF and PACF plots of the seasonal component, there is a significant lag at 14
-# but none beyond 14 in the PACF thus we can set our P to 14
-# In the ACF, there is a significant lag at 72, but none beyond, thus we can set Q to 72
-# However, 72 is a pretty big value, thus we can also set Q to 12 or 4, which is the maximum positive or negative value exhibited by a lag.
-# We can set our seasonal order to be 38 since it is the minimum value > to the AR and MA order of the ARIMA model
-# Although the period in the ACF of the seasonal component seems to repeat itself every 12 lags and the fact we have monthly data.
-# There is evidence for a seasonal order of 12 lags, however we cannot set it lower than the AR and MA order of the ARIMA model to avoid duplicates.
-seasonal_start_cd = [(14,0,12,38)] # Seasonal order needs to be > to AR and MA order
-# evaluate_model_with_BoxJenkins(watch_train, watch_test, start_cd, eval_df, seasonal_start_cd, seasonal=True, index='watch')
+# Seasonality pattern repeating every 12 lags, thus set m=12. (ACF of the seasonal component)
+
+# Candidates are chosen based on the ACF and PACF plots
+# P, D, Q = [1,2,6,7,8,9,10,12,13,14], [0], [1,3,4,8,9,11,12]
+# seasonal_candidates = generate_arima_candidates(P, D, Q, seasonal=True, m=12)
+# eval_df = evaluate_model_with_Plots(watch_df_decomp.observed, seasonal_candidates, eval_df, seasonal=True, index='watch', arima_order=arima_watch)
+# print(eval_df)
+
+sarima_watch = [(2,1,3), ()] # Seasonal order needs to be > to AR and MA order
+# check_model_with_BoxJenkins(watch_train, sarima_watch[0], sarima_watch[1], index='watch')
 
 # Create optimal (S)ARIMA model
-optimal = start_cd[0]
-optimal_seasonal = seasonal_start_cd[0]
-# watch_model = create_model(watch_train, optimal, seasonal_order=None, index='watch') # Only run once to save the optimal model
-# watch_model = create_model(watch_train, optimal_seasonal, optimal_seasonal_order, index='watch') # Only run once to save the optimal model
+# watch_model = create_model(watch_train, arima_watch, seasonal_order=None, index='watch') # Only run once to save the optimal model
+# watch_model_seasonal = create_model(watch_train, sarima_watch[0], sarima_watch[1], index='watch') # Only run once to save the optimal model
 
 # Now that model is trained + evaluated, use it to forecast
 short_term = watch_test.shape[0] + 12 # 1 year
@@ -495,37 +484,33 @@ ref_start = watch_df_decomp.observed.index[-1] # "2023-12-01"
 end_short = "2024-12-01"
 end_medium = "2028-12-01"
 end_long = "2034-02-01"
-# forecast_model(watch_df_decomp.observed, watch_train, watch_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='watch')
+# forecast_model(watch_df_decomp.observed, watch_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='watch')
 
 # ART INDEX DATA FORECASTING
 # Split data into train and test
-art_train = art_dfdecomp.observed[:int(0.8*len(art_dfdecomp.observed))]
-art_test = art_dfdecomp.observed[int(0.8*len(art_dfdecomp.observed)):]
-art_seasonal = art_dfdecomp.seasonal
+art_train = art_df_decomp.observed[:int(0.8*len(art_df_decomp.observed))]
+art_test = art_df_decomp.observed[int(0.8*len(art_df_decomp.observed)):]
+art_seasonal = art_df_decomp.seasonal
 eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
 
-# Box Jenkins Methodology to determine the optimal ARIMA model
 # Evaluate Art ARIMA model with ACF + PACF plots
 # Candidates are chosen based on the ACF and PACF plots
-# candidates = [(0,1,6), (0,1,42), (0,1,96), (42,1,0), (30,1,0), (30,1,6), (30,1,42), (30,1,96), (42,1,6), (42,1,42), (42,1,96)]
-# eval_df = evaluate_model_with_Plots(art_train, art_test, candidates, eval_df, index='art')
-# print(eval_df)
-
-# The best model seems to be (30,1,6)
+# p, d, q = [0,1,2,4,5,6,11,12,13], [1], [0,1,2,4,6,8,10,11,12]
+# candidates = generate_arima_candidates(p, d, q)
+# eval_df = evaluate_model_with_Plots(art_df_decomp.observed, candidates, eval_df, index='art')
+# print("Head")
+# print(eval_df.head(40))
+# print("Tail")
+# print(eval_df.tail(41))
 
 # Evaluate Art ARIMA model with Box-Jenkins model diagnostic
-# Starting point : previous best model (30,1,6)
-start_cd = [(32,1,13)] 
-# evaluate_model_with_BoxJenkins(art_train, art_test, start_cd, eval_df, seasonal_start_cd=None, seasonal=False, index='art')
-# In the PACF of the residuals, there are a few lags before 30 that have value 0: lag 12,13,24
-# There is also lag 32 just above 30 that has a value of 0, thus I will set my AR order to 32 or 24 and see which improves most.
-# In the ACF of the residuals, lag 13,14 are closest to 0, thus I will set my MA to whichever improves most the model on the test set.
-# There is also lag 39, but 39 seems pretty high and will increase the complexity of the model while setting a minimum constraint for the seasonal order later.
-# Best model yet : (32,1,13) exhibits the best performance reducing the MAE and MSE on the test set and captures the trend in the test set
-# NB: Log - transformation stabilizes the variance as such the residuals are closer to white noise, however there is less volatility in the forecast, thus less accuracy on the test set
-# Since the original data is pretty volatile, thus discard the log-transformation again.
+arima_art = (6,1,8)
+# check_model_with_BoxJenkins(art_train, arima_art, seasonal_start_cd=None, index='art')
+# (6,1,8) gives the best performance but the residuals aren't white noise, they fail the test.
+# (13,1,12) gives a lower performance but the residuals are white noise
 
 # Seasonal decomposition suggests underlying complex seasonal pattern so we will now optimize the SARIMA model
+# ACF and PACF show a seasonal pattern repeating every 6 lags (ACF + PACF of the original data)
 
 # Evaluate Stationarity of the seasonal component
 
@@ -535,22 +520,21 @@ start_cd = [(32,1,13)]
 # print(f"Is the data stationary according to the ADF Test? {stationary}") # True
 # We can set our order D to 0 since the seasonal component is stationary
 
-# By looking at the ACF and PACF plots of the seasonal component, there is a significant lag in the PACF
-# 19, 24 and 30. 19 is the last lag out of a cluster of significant lags, so we start with 19
-# and then try 24 and 30 to see if it improves performance. In the ACF, there is a significant lag at 180
-# but knowing 180 is a pretty large value, we can set it to 4 or 12 which are the lags with the highest positive
-# or negative value outside the significance region.
-# ACF pattern repeats itself every 7 lags, and since the data is sampled monthly, either 7 or 12 seems good
-# for M being the seasonal order. However M > max(p,q) from ARIMA(p,d,q) to avoid duplicate lags. Thus we
-# can set it to the minimum value possible: 33 since p = 32 and q = 13.
-seasonal_start_cd = [(19,0,12,33)] # Seasonal order needs to be > to AR and MA order
-# evaluate_model_with_BoxJenkins(art_train, art_test, start_cd, eval_df, seasonal_start_cd, seasonal=True, index='art')
+# Seasonality pattern repeating every lags, thus set m=6. (ACF of the seasonal component)
+# However since m > max(p,q) we can set m=12 to still capture the seasonality efficiently
+
+# Candidates are chosen based on the ACF and PACF plots
+P, D, Q = [0,2,3,4,5,6,7,12], [0], [0,2,3,4,6,12]
+seasonal_candidates = generate_arima_candidates(P, D, Q, seasonal=True, m=12)
+eval_df = evaluate_model_with_Plots(art_df_decomp.observed, seasonal_candidates, eval_df, seasonal=True, index='art', arima_order=arima_art)
+print(eval_df.head(len(eval_df)-1))
+
+sarima_art = [(6,1,8),()]
+# check_model_with_BoxJenkins(art_train, sarima_art[0], sarima_art[1], index='art')
 
 # Create optimal (S)ARIMA model
-optimal = start_cd[0]
-optimal_seasonal = seasonal_start_cd[0]
-# art_model = create_model(art_train, optimal, seasonal_order=None, index='art') # Only run once to save the optimal model
-# art_model = create_model(art_train, optimal_seasonal, optimal_seasonal_order, index='art') # Only run once to save the optimal model
+# art_model = create_model(art_train, arima_art, seasonal_order=None, index='art') # Only run once to save the optimal model
+# art_model_seasonal = create_model(art_train, sarima_art[0], sarima_art[1], index='art') # Only run once to save the optimal model
 
 # Now that model is trained + evaluated, use it to forecast
 short_term = art_test.shape[0] + 12 # 1 year
@@ -558,11 +542,11 @@ medium_term = art_test.shape[0] + 12*5 # 5 years
 long_term = art_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
 
 # Short, medium and long term forecasts
-ref_start = art_dfdecomp.observed.index[-1] # "2023-09-01"
+ref_start = art_df_decomp.observed.index[-1] # "2023-09-01"
 end_short = "2024-09-01"
 end_medium = "2028-09-01"
 end_long = "2051-02-01"
-# forecast_model(art_dfdecomp.observed, art_train, art_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='art')
+# forecast_model(art_df_decomp.observed, art_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='art')
       
 ##### VISUALIZATION / HELPER PLOTS #####
 
@@ -654,13 +638,13 @@ end_long = "2051-02-01"
 # plt.title('Wine Seasonality ACF 80 lags')
 # plt.show() 
 
-fig = plot_pacf(wine_seasonal, color = "green", lags=134) # PACF cannot be longer than 50% of the data
-plt.title('Wine Seasonality PACF 134 lags')
-plt.show()
+# fig = plot_pacf(wine_seasonal, color = "green", lags=134) # PACF cannot be longer than 50% of the data
+# plt.title('Wine Seasonality PACF 134 lags')
+# plt.show()
 
-fig = plot_pacf(wine_seasonal, color = "green", lags=50) # Plotting most interesting subset of the PACF
-plt.title('Wine Seasonality PACF 50 lags')
-plt.show()
+# fig = plot_pacf(wine_seasonal, color = "green", lags=50) # Plotting most interesting subset of the PACF
+# plt.title('Wine Seasonality PACF 50 lags')
+# plt.show()
 
 # fig = plot_acf(watch_seasonal, color = "blue", lags=len(watch_seasonal)-1) 
 # plt.title('Watch Seasonality ACF 200+ lags')
