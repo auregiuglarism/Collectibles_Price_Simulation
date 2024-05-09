@@ -218,15 +218,15 @@ def check_model_with_BoxJenkins(train, start_cd, seasonal_start_cd=None, index='
     # Null Hypothesis : The residuals are independently distributed
     # Alternative Hypothesis : The residuals are not independently distributed
     # If p-value < 0.05, reject the null hypothesis thus we want to see a p-value > 0.05
-    if index=='wine':
+    if index=='wine' or index=='wine_residuals':
         is_white_noise = is_white_noise_with_LjungBox(train_residuals, significance_level=0.05)
         print(f"Are the train residuals white noise? {is_white_noise}")
 
-    elif index=='watch':
+    elif index=='watch' or index=='watch_residuals':
         is_white_noise = is_white_noise_with_LjungBox(train_residuals, significance_level=0.05, lags=41)
         print(f"Are the train residuals white noise? {is_white_noise}")
 
-    else: # index=='art'
+    else: # index=='art' or index=='art_residuals'
         is_white_noise = is_white_noise_with_LjungBox(train_residuals, significance_level=0.05, lags=41)
         print(f"Are the train residuals white noise? {is_white_noise}")
 
@@ -240,15 +240,15 @@ def forecast_model(data, test, forecast_steps, length, end_date, model=None, sea
     forecast_ci = forecast.conf_int()
     yhat = forecast.predicted_mean.values # Apply the exp transformation if you used log transform during fit before to invert scales back
 
-    if index=='wine':
+    if index=='wine' or index=='wine_residuals':
         x_axis = pd.date_range(start=data.index[0], end=data.index[-1], freq = 'M')
         x_axis_forecast = pd.date_range(start=test.index[0], end = end_date, freq = 'M')
 
-    elif index=='watch':
+    elif index=='watch' or index=='watch_residuals':
         x_axis = pd.date_range(start=data.index[0], end=data.index[-1], freq = 'MS')
         x_axis_forecast = pd.date_range(start=test.index[0], end = end_date, freq = 'MS')
 
-    else: # index=='art'
+    else: # index=='art' or index=='art_residuals'
         x_axis = pd.date_range(start=data.index[0], end=data.index[-1], freq = 'MS')
         x_axis_forecast = pd.date_range(start=test.index[0], end = end_date, freq = 'MS')
 
@@ -259,6 +259,8 @@ def forecast_model(data, test, forecast_steps, length, end_date, model=None, sea
     plt.xlabel('Time')
     plt.ylabel('Index value')
     plt.show()
+
+    return yhat
 
 def split_cross_validation(data, order, index='wine', seasonal_order=None, seasonal=False):
     # Not using blocked cross-validation because there is not enough data for sufficient blocks
@@ -341,26 +343,7 @@ art_df_diff = art_df_decomp.observed.diff().dropna()
 # Smoothing the data with a 30 day moving average messes (for some reason) the stationarity of the data.
 # Increasing the window size makes it worse.
 
-# Evaluating stationarity of the data using KPSS and ADF tests 
-# Wine
-# stationary = is_stationary_with_KPSS(wine_df_diff, significance_level=0.05)
-# print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
-# stationary = is_stationary_with_ADF(wine_df_diff, significance_level=0.05)
-# print(f"Is the data stationary according to the ADF Test? {stationary}") # True
-
-# Watch
-# stationary = is_stationary_with_KPSS(watch_df_diff, significance_level=0.05)
-# print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
-# stationary = is_stationary_with_ADF(watch_df_diff, significance_level=0.05)
-# print(f"Is the data stationary according to the ADF Test? {stationary}") # True
-
-# Art
-# stationary = is_stationary_with_KPSS(art_df_diff, significance_level=0.05)
-# print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
-# stationary = is_stationary_with_ADF(art_df_diff, significance_level=0.05)
-# print(f"Is the data stationary according to the ADF Test? {stationary}") # True
-
-## (S)ARIMA (p,d,q)*(P,D,Q)**M Model Forecasting ##
+### (S)ARIMA (p,d,q)*(P,D,Q)**M Model Forecasting (First Method) ###
 
 # First order differencing makes the data stationary so I will set my d = 1 as confirmed by ADF + KPSS tests
 
@@ -371,8 +354,7 @@ art_df_diff = art_df_decomp.observed.diff().dropna()
 # If lag orders are high, and/or performance is not that good while still having white noise residuals, and the seasonal decomposition shows seasonality
 # Then do the same iterative process for a SARIMA model
 
-# WINE INDEX DATA FORECASTING
-
+# WINE
 # Initial Split into train and test (for after split cross validation)
 wine_train = wine_df_decomp.observed[:int(0.8*len(wine_df_decomp.observed))]
 wine_test = wine_df_decomp.observed[int(0.8*len(wine_df_decomp.observed)):]
@@ -395,15 +377,6 @@ arima_wine = (3,1,3)
 # check_model_with_BoxJenkins(wine_train, arima_wine, seasonal_start_cd=None, index='wine')
 # Residuals are white noise.
 
-# Seasonal decomposition suggests underlying complex seasonal pattern 
-
-# Evaluate Stationarity of the seasonal component 
-# stationary = is_stationary_with_KPSS(wine_seasonal, significance_level=0.05)
-# print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
-# stationary = is_stationary_with_ADF(wine_seasonal, significance_level=0.05)
-# print(f"Is the data stationary according to the ADF Test? {stationary}") # True
-# We can set our order D to 0 since the seasonal component is stationary
-
 # Seasonality pattern repeating every 12 lags, thus set m=12. (ACF of the seasonal component)
 
 # Candidates are chosen based on the ACF and PACF plots
@@ -415,7 +388,7 @@ arima_wine = (3,1,3)
 sarima_wine = [(3,1,3), ()] # m needs to be > to AR and MA order of ARIMA
 # check_model_with_BoxJenkins(wine_train, sarima_wine[0], sarima_wine[1], index='wine')
 
-# Create optimal (S)ARIMA model
+# Save optimal (S)ARIMA model
 # wine_model = create_model(wine_train, arima_wine, seasonal_order=None, index='wine') # Only run once to save the optimal model
 # wine_model_seasonal = create_model(wine_train, sarima_wine[0], sarima_wine[1], index='wine') # Only run once to save the optimal model
 
@@ -431,8 +404,8 @@ end_medium = "2028-12-31"
 end_long = "2037-06-30"
 # forecast_model(wine_df_decomp.observed, wine_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='wine')
 
-# WATCH INDEX DATA FORECASTING
-# Split data into train and test
+# WATCH 
+# Initial Split into train and test (for after split cross validation)
 watch_train = watch_df_decomp.observed[:int(0.8*len(watch_df_decomp.observed))]
 watch_test = watch_df_decomp.observed[int(0.8*len(watch_df_decomp.observed)):]
 watch_seasonal = watch_df_decomp.seasonal
@@ -450,27 +423,18 @@ arima_watch = (2,1,3)
 # check_model_with_BoxJenkins(watch_train, arima_watch, seasonal_start_cd=None, index='watch')
 # Residuals are white noise.
 
-# Seasonal decomposition suggests underlying complex seasonal pattern 
-
-# Evaluate Stationarity of the seasonal component 
-# stationary = is_stationary_with_KPSS(watch_seasonal, significance_level=0.05)
-# print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
-# stationary = is_stationary_with_ADF(watch_seasonal, significance_level=0.05)
-# print(f"Is the data stationary according to the ADF Test? {stationary}") # True
-# We can set our order D to 0 since the seasonal component is stationary
-
 # Seasonality pattern repeating every 12 lags, thus set m=12. (ACF of the seasonal component)
 
 # Candidates are chosen based on the ACF and PACF plots
 # P, D, Q = [1,2,6,7,8,9,10,12,13,14], [0], [1,3,4,8,9,11,12]
-# seasonal_candidates = generate_arima_candidates(P, D, Q, seasonal=True, m=12)
+# seasonal_candidates = generate_arima_candidates(P, D, Q, seasonal=True, m=12) 
 # eval_df = evaluate_model_with_Plots(watch_df_decomp.observed, seasonal_candidates, eval_df, seasonal=True, index='watch', arima_order=arima_watch)
 # print(eval_df)
 
 sarima_watch = [(2,1,3), ()] # Seasonal order needs to be > to AR and MA order
 # check_model_with_BoxJenkins(watch_train, sarima_watch[0], sarima_watch[1], index='watch')
 
-# Create optimal (S)ARIMA model
+# Save optimal (S)ARIMA model
 # watch_model = create_model(watch_train, arima_watch, seasonal_order=None, index='watch') # Only run once to save the optimal model
 # watch_model_seasonal = create_model(watch_train, sarima_watch[0], sarima_watch[1], index='watch') # Only run once to save the optimal model
 
@@ -486,8 +450,8 @@ end_medium = "2028-12-01"
 end_long = "2034-02-01"
 # forecast_model(watch_df_decomp.observed, watch_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='watch')
 
-# ART INDEX DATA FORECASTING
-# Split data into train and test
+# ART 
+# Initial Split into train and test (for after split cross validation)
 art_train = art_df_decomp.observed[:int(0.8*len(art_df_decomp.observed))]
 art_test = art_df_decomp.observed[int(0.8*len(art_df_decomp.observed)):]
 art_seasonal = art_df_decomp.seasonal
@@ -512,27 +476,19 @@ arima_art = (6,1,8)
 # Seasonal decomposition suggests underlying complex seasonal pattern so we will now optimize the SARIMA model
 # ACF and PACF show a seasonal pattern repeating every 6 lags (ACF + PACF of the original data)
 
-# Evaluate Stationarity of the seasonal component
-
-# stationary = is_stationary_with_KPSS(art_seasonal, significance_level=0.05)
-# print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
-# stationary = is_stationary_with_ADF(art_seasonal, significance_level=0.05)
-# print(f"Is the data stationary according to the ADF Test? {stationary}") # True
-# We can set our order D to 0 since the seasonal component is stationary
-
-# Seasonality pattern repeating every lags, thus set m=6. (ACF of the seasonal component)
+# Seasonality pattern repeating every 6 lags, thus set m=6. (ACF of the seasonal component)
 # However since m > max(p,q) we can set m=12 to still capture the seasonality efficiently
 
 # Candidates are chosen based on the ACF and PACF plots
-P, D, Q = [0,2,3,4,5,6,7,12], [0], [0,2,3,4,6,12]
-seasonal_candidates = generate_arima_candidates(P, D, Q, seasonal=True, m=12)
-eval_df = evaluate_model_with_Plots(art_df_decomp.observed, seasonal_candidates, eval_df, seasonal=True, index='art', arima_order=arima_art)
-print(eval_df.head(len(eval_df)-1))
+# P, D, Q = [0,2,3,4,5,6,7,12], [0], [0,2,3,4,6,12]
+# seasonal_candidates = generate_arima_candidates(P, D, Q, seasonal=True, m=12)
+# eval_df = evaluate_model_with_Plots(art_df_decomp.observed, seasonal_candidates, eval_df, seasonal=True, index='art', arima_order=arima_art)
+# print(eval_df.head(len(eval_df)-1))
 
 sarima_art = [(6,1,8),()]
 # check_model_with_BoxJenkins(art_train, sarima_art[0], sarima_art[1], index='art')
 
-# Create optimal (S)ARIMA model
+# Save optimal (S)ARIMA model
 # art_model = create_model(art_train, arima_art, seasonal_order=None, index='art') # Only run once to save the optimal model
 # art_model_seasonal = create_model(art_train, sarima_art[0], sarima_art[1], index='art') # Only run once to save the optimal model
 
@@ -547,8 +503,93 @@ end_short = "2024-09-01"
 end_medium = "2028-09-01"
 end_long = "2051-02-01"
 # forecast_model(art_df_decomp.observed, art_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='art')
-      
-##### VISUALIZATION / HELPER PLOTS #####
+
+### ARIMA (p,d,q) Model Forecasting (Second Method) ####
+
+# WINE
+# Initial Split into train and test (for after split cross validation)
+wine_residuals = wine_df_decomp.resid.dropna() # Remove 6 NaN values at the start + end
+wine_residuals_train = wine_residuals[:int(0.8*len(wine_residuals))]
+wine_residuals_test = wine_residuals[int(0.8*len(wine_residuals)):]
+
+# Are the wine residuals stationary ? Yes so set d=0 in ARIMA model
+
+# Determine good ARIMA Model candidates using the ACF and PACF Plots and choose the best one
+# p, d, q = [0,1,2,3,4,23,24], [0], [0,1,2,5,6,7,12,17,18]
+# candidates = generate_arima_candidates(p, d, q)
+# eval_df = evaluate_model_with_Plots(wine_residuals, candidates, eval_df, index='wine')
+# print("Head")
+# print(eval_df.head(35))
+# print("Tail")
+# print(eval_df.tail(35))
+
+# Evaluate Art ARIMA model with Box-Jenkins model diagnostic
+arima_resid_wine = (4,0,1) # (3,0,12) or (4,0,1) from the candidates
+# check_model_with_BoxJenkins(wine_residuals, arima_resid_wine, seasonal_start_cd=None, index='wine')
+# (4,0,1) has white noise residuals
+# (3,0,12) has white noise residuals
+
+# Save optimal model
+# wine_model_resid = create_model(wine_residuals_train, arima_resid_wine, seasonal_order=None, index='wine_residuals') # Only run once to save the optimal model
+
+# Now that model is trained + evaluated, use it to forecast
+# Forecast residual
+long_term = wine_residuals_train.shape[0]
+ref_start = wine_residuals.index[-1] # 2023-06-30
+end_long = "2036-04-30"
+resid_prediction = forecast_model(wine_residuals, wine_residuals_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='wine_residuals')
+# Rebuild the forecasted residuals into the original data
+wine_seasonal = wine_df_decomp.seasonal[6:-6] # Period of 12
+wine_trend = wine_df_decomp.trend[6:-6] 
+# Take the mean of trend + period of the seasonal component
+
+### STATIONARITY TESTS ###
+
+# Wine
+# stationary = is_stationary_with_KPSS(wine_df_diff, significance_level=0.05)
+# print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
+# stationary = is_stationary_with_ADF(wine_df_diff, significance_level=0.05)
+# print(f"Is the data stationary according to the ADF Test? {stationary}") # True
+
+# stationary = is_stationary_with_KPSS(wine_residuals, significance_level=0.05)
+# print(f"Are the residuals stationary according to the KPSS Test? {stationary}") # True
+# stationary = is_stationary_with_ADF(wine_residuals, significance_level=0.05)
+# print(f"Are the residuals stationary according to the ADF Test? {stationary}") # True
+
+# Watch
+# stationary = is_stationary_with_KPSS(watch_df_diff, significance_level=0.05)
+# print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
+# stationary = is_stationary_with_ADF(watch_df_diff, significance_level=0.05)
+# print(f"Is the data stationary according to the ADF Test? {stationary}") # True
+
+# Art
+# stationary = is_stationary_with_KPSS(art_df_diff, significance_level=0.05)
+# print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
+# stationary = is_stationary_with_ADF(art_df_diff, significance_level=0.05)
+# print(f"Is the data stationary according to the ADF Test? {stationary}") # True
+
+# Evaluate Stationarity of the seasonal component wine
+# stationary = is_stationary_with_KPSS(wine_seasonal, significance_level=0.05)
+# print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
+# stationary = is_stationary_with_ADF(wine_seasonal, significance_level=0.05)
+# print(f"Is the data stationary according to the ADF Test? {stationary}") # True
+# We can set our order D to 0 since the seasonal component is stationary
+
+# Evaluate Stationarity of the seasonal component watch
+# stationary = is_stationary_with_KPSS(watch_seasonal, significance_level=0.05)
+# print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
+# stationary = is_stationary_with_ADF(watch_seasonal, significance_level=0.05)
+# print(f"Is the data stationary according to the ADF Test? {stationary}") # True
+# We can set our order D to 0 since the seasonal component is stationary
+
+# Evaluate Stationarity of the seasonal component art
+# stationary = is_stationary_with_KPSS(art_seasonal, significance_level=0.05)
+# print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
+# stationary = is_stationary_with_ADF(art_seasonal, significance_level=0.05)
+# print(f"Is the data stationary according to the ADF Test? {stationary}") # True
+# We can set our order D to 0 since the seasonal component is stationary
+
+### VISUALIZATION / HELPER PLOTS ###
 
 # plt.plot(wine_df_decomp.observed)
 # plt.title('Wine Index')
@@ -630,6 +671,8 @@ end_long = "2051-02-01"
 # plt.title('Art Index PACF 50 lags')
 # plt.show()
 
+# SEASONAL ACF + PACF #
+
 # fig = plot_acf(wine_seasonal, color = "blue", lags=269) 
 # plt.title('Wine Seasonality ACF 269 lags')
 # plt.show() 
@@ -676,6 +719,24 @@ end_long = "2051-02-01"
 
 # fig = plot_pacf(art_seasonal, color = "green", lags=50) # Plotting most interesting subset of the PACF
 # plt.title('Watch Seasonality PACF 50 lags')
+# plt.show()
+
+# RESIDUAL ACF + PACF #
+
+# fig = plot_acf(wine_residuals, color = "blue", lags=len(wine_residuals)-1) # ACF cannot be longer than the data.
+# plt.title('Wine Index Residuals ACF')
+# plt.show()
+
+# fig = plot_acf(wine_residuals, color = "blue", lags=50) # Plotting most interesting subset of the ACF
+# plt.title('Wine Index Residuals ACF Zoomed')
+# plt.show()
+
+# fig = plot_pacf(wine_residuals, color = "green", lags=int((len(wine_residuals)/2)-1)) # PACF cannot be longer than 50% of the data
+# plt.title('Wine Index Residuals PACF')
+# plt.show()
+
+# fig = plot_pacf(wine_residuals, color = "green", lags=50) # Plotting most interesting subset of the PACF
+# plt.title('Wine Index Residuals PACF Zoomed')
 # plt.show()
 
 
