@@ -504,7 +504,7 @@ end_medium = "2028-09-01"
 end_long = "2051-02-01"
 # forecast_model(art_df_decomp.observed, art_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='art')
 
-### ARIMA (p,d,q) Model Forecasting (Second Method) ####
+### ARIMA (p,d,q) Model Forecasting (Second Method) Decomposition-forecasting-recombination strategy ####
 
 # WINE
 # Initial Split into train and test (for after split cross validation)
@@ -523,7 +523,7 @@ wine_residuals_test = wine_residuals[int(0.8*len(wine_residuals)):]
 # print("Tail")
 # print(eval_df.tail(35))
 
-# Evaluate Art ARIMA model with Box-Jenkins model diagnostic
+# Evaluate Wine Residual ARIMA model with Box-Jenkins model diagnostic
 arima_resid_wine = (4,0,1) # (3,0,12) or (4,0,1) from the candidates
 # check_model_with_BoxJenkins(wine_residuals, arima_resid_wine, seasonal_start_cd=None, index='wine')
 # (4,0,1) has white noise residuals
@@ -537,11 +537,45 @@ arima_resid_wine = (4,0,1) # (3,0,12) or (4,0,1) from the candidates
 long_term = wine_residuals_train.shape[0]
 ref_start = wine_residuals.index[-1] # 2023-06-30
 end_long = "2036-04-30"
-resid_prediction = forecast_model(wine_residuals, wine_residuals_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='wine_residuals')
-# Rebuild the forecasted residuals into the original data
+wine_resid_prediction = forecast_model(wine_residuals, wine_residuals_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='wine_residuals')
+# Forecast seasonality with period
 wine_seasonal = wine_df_decomp.seasonal[6:-6] # Period of 12
+wine_seasonal = wine_seasonal[:12]
+wine_seasonal_prediction = []
+counter = 0
+for i in range(0, len(wine_resid_prediction)):
+    wine_seasonal_prediction.append(wine_seasonal[counter])
+    if counter == (len(wine_seasonal)-1):
+        counter = 0
+    else:
+        counter += 1
+# Forecast trend with mean or walk forward method
 wine_trend = wine_df_decomp.trend[6:-6] 
-# Take the mean of trend + period of the seasonal component
+start = len(wine_trend) - len(wine_resid_prediction)
+wine_trend_prediction_2 = [] # Walk forward method
+for i in range(0, len(wine_resid_prediction)):
+    tmp_values = wine_trend[start:].values.tolist()
+    if wine_trend_prediction_2 != []:
+        tmp_values.extend(wine_trend_prediction_2)
+
+    wine_trend_prediction_2.append(np.mean(tmp_values))
+    start+=1
+
+wine_trend_mean = np.mean(wine_trend[len(wine_trend) - len(wine_resid_prediction):])
+wine_trend_prediction = np.full(len(wine_resid_prediction), wine_trend_mean)
+# Forecast the index by building up the original scale again for each data point
+wine_forecast = wine_resid_prediction + wine_seasonal_prediction + wine_trend_prediction
+wine_forecast_2 = wine_resid_prediction + wine_seasonal_prediction + wine_trend_prediction_2
+# Plot
+x_axis = pd.date_range(start=wine_df_decomp.observed.index[0], end=wine_df_decomp.observed.index[-1], freq = 'M')
+x_axis_forecast = pd.date_range(start=wine_residuals_test.index[0], end = end_long, freq = 'M')
+plt.plot(x_axis, wine_df_decomp.observed.values, color="blue", label="observed data")
+plt.plot(x_axis_forecast, wine_forecast_2, color="red", label="forecast", linestyle="--")
+plt.legend(loc='best')
+plt.title('Long term forecast of wine index values using ARIMA decomposition-forecasting-recombination strategy')
+plt.xlabel('Time')
+plt.ylabel('Index value')
+plt.show()
 
 ### STATIONARITY TESTS ###
 
