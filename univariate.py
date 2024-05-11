@@ -33,6 +33,9 @@ import statsmodels.api as sm
 # https://medium.com/rapids-ai/arima-forecast-large-time-series-datasets-with-rapids-cuml-18428a00d02e
 # https://docs.rapids.ai/install#pip
 
+# https://www.sciencedirect.com/science/article/pii/S0925231219309178
+# https://stats.stackexchange.com/questions/124955/is-it-unusual-for-the-mean-to-outperform-arima/125016#125016
+
 ##### PREPROCESSING #####
 
 def moving_average_smooth(df, window_size):
