@@ -325,6 +325,50 @@ def generate_arima_candidates(p, d, q, seasonal=False, m=0):
             candidates.append((p_val, d_val, q_val))
   return candidates
 
+def forecast_decomp_recomb_strategy(data, resid_test_data, resid_prediction, seasonal_data, trend_data, end_date, method='mean', index='wine', freq='M'):
+    # Forecast seasonality with period
+    seasonal = seasonal_data[6:-6] # Period of 12
+    seasonal = seasonal[:12]
+    seasonal_prediction = []
+    counter = 0
+    for i in range(0, len(resid_prediction)):
+        seasonal_prediction.append(seasonal[counter])
+        if counter == (len(seasonal)-1):
+            counter = 0
+        else:
+            counter += 1
+
+    # Forecast trend depending on chosen method:
+    trend = trend_data[6:-6] 
+    if method == 'mean':
+        trend_mean = np.mean(trend[len(trend) - len(resid_prediction):])
+        trend_prediction = np.full(len(resid_prediction), trend_mean)
+    
+    elif method == 'walk_forward':
+        start = len(trend) - len(resid_prediction)
+        trend_prediction = [] 
+        for i in range(0, len(resid_prediction)):
+            tmp_values = trend[start:].values.tolist()
+            if trend_prediction != []:
+                tmp_values.extend(trend_prediction)
+
+            trend_prediction.append(np.mean(tmp_values))
+            start+=1
+
+
+    # Forecast the index by building up the original scale again for each data point
+    forecast = resid_prediction + seasonal_prediction + trend_prediction
+
+    x_axis = pd.date_range(start=data.index[0], end=data.index[-1], freq = freq)
+    x_axis_forecast = pd.date_range(start=resid_test_data.index[0], end = end_date, freq = freq)
+    plt.plot(x_axis, data.values, color="blue", label="observed data")
+    plt.plot(x_axis_forecast, forecast, color="red", label="forecast", linestyle="--")
+    plt.legend(loc='best')
+    plt.title(f'Long term forecast of {index} index values using ARIMA decomposition-forecasting-recombination strategy')
+    plt.xlabel('Time')
+    plt.ylabel('Index value')
+    plt.show()
+
 ##### MAIN #####
 
 ## Load the data from global pre-processing.py ##
@@ -538,47 +582,7 @@ arima_resid_wine = (4,0,1) # (3,0,12) or (4,0,1) from the candidates
 # ref_start = wine_residuals.index[-1] # 2023-06-30
 # end_long = "2036-04-30"
 # wine_resid_prediction = forecast_model(wine_residuals, wine_residuals_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='wine_residuals')
-
-# # Forecast seasonality with period
-# wine_seasonal = wine_df_decomp.seasonal[6:-6] # Period of 12
-# wine_seasonal = wine_seasonal[:12]
-# wine_seasonal_prediction = []
-# counter = 0
-# for i in range(0, len(wine_resid_prediction)):
-#     wine_seasonal_prediction.append(wine_seasonal[counter])
-#     if counter == (len(wine_seasonal)-1):
-#         counter = 0
-#     else:
-#         counter += 1
-
-# # Forecast trend with mean or walk forward method
-# wine_trend = wine_df_decomp.trend[6:-6] 
-# start = len(wine_trend) - len(wine_resid_prediction)
-# wine_trend_prediction_2 = [] # Walk forward method
-# for i in range(0, len(wine_resid_prediction)):
-#     tmp_values = wine_trend[start:].values.tolist()
-#     if wine_trend_prediction_2 != []:
-#         tmp_values.extend(wine_trend_prediction_2)
-
-#     wine_trend_prediction_2.append(np.mean(tmp_values))
-#     start+=1
-# wine_trend_mean = np.mean(wine_trend[len(wine_trend) - len(wine_resid_prediction):])
-# wine_trend_prediction = np.full(len(wine_resid_prediction), wine_trend_mean)
-
-# # Forecast the index by building up the original scale again for each data point
-# wine_forecast = wine_resid_prediction + wine_seasonal_prediction + wine_trend_prediction
-# wine_forecast_2 = wine_resid_prediction + wine_seasonal_prediction + wine_trend_prediction_2
-
-# # Plot
-# x_axis = pd.date_range(start=wine_df_decomp.observed.index[0], end=wine_df_decomp.observed.index[-1], freq = 'M')
-# x_axis_forecast = pd.date_range(start=wine_residuals_test.index[0], end = end_long, freq = 'M')
-# plt.plot(x_axis, wine_df_decomp.observed.values, color="blue", label="observed data")
-# plt.plot(x_axis_forecast, wine_forecast_2, color="red", label="forecast", linestyle="--")
-# plt.legend(loc='best')
-# plt.title('Long term forecast of wine index values using ARIMA decomposition-forecasting-recombination strategy')
-# plt.xlabel('Time')
-# plt.ylabel('Index value')
-# plt.show()
+# forecast_decomp_recomb_strategy(wine_df_decomp.observed, wine_residuals_test, wine_resid_prediction, wine_df_decomp.seasonal, wine_df_decomp.trend, end_long, method='walk_forward', index='wine', freq='M')
 
 # WATCH
 # Initial Split into train and test (for after split cross validation)
@@ -604,51 +608,44 @@ arima_resid_watch = (2,0,0)
 
 # Now that model is trained + evaluated, use it to forecast
 # Forecast residual
-long_term = watch_residuals_train.shape[0]
-ref_start = watch_residuals.index[-1] # 2023-06-01
-end_long = "2033-02-01"
-watch_resid_prediction = forecast_model(watch_residuals, watch_residuals_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='watch_residuals')
+# long_term = watch_residuals_train.shape[0]
+# ref_start = watch_residuals.index[-1] # 2023-06-01
+# end_long = "2033-02-01"
+# watch_resid_prediction = forecast_model(watch_residuals, watch_residuals_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='watch_residuals')
+# forecast_decomp_recomb_strategy(watch_df_decomp.observed, watch_residuals_test, watch_resid_prediction, watch_df_decomp.seasonal, watch_df_decomp.trend, end_long, method='walk_forward', index='watch', freq='MS')
 
-# Forecast seasonality with period
-watch_seasonal = watch_df_decomp.seasonal[6:-6] # Period of 12
-watch_seasonal = watch_seasonal[:12]
-watch_seasonal_prediction = []
-counter = 0
-for i in range(0, len(watch_resid_prediction)):
-    watch_seasonal_prediction.append(watch_seasonal[counter])
-    if counter == (len(watch_seasonal)-1):
-        counter = 0
-    else:
-        counter += 1
+# ART
+# Initial Split into train and test (for after split cross validation)
+art_residuals = art_df_decomp.resid.dropna() # Remove 6 NaN values at the start + end
+art_residuals_train = art_residuals[:int(0.8*len(art_residuals))]
+art_residuals_test = art_residuals[int(0.8*len(art_residuals)):]
 
-# Forecast trend with mean or walk forward method
-watch_trend = watch_df_decomp.trend[6:-6] 
-start = len(watch_trend) - len(watch_resid_prediction)
-watch_trend_prediction_2 = [] # Walk forward method
-for i in range(0, len(watch_resid_prediction)):
-    tmp_values = watch_trend[start:].values.tolist()
-    if watch_trend_prediction_2 != []:
-        tmp_values.extend(watch_trend_prediction_2)
+# Are the art residuals stationary ? Yes so set d=0 in ARIMA model
 
-    watch_trend_prediction_2.append(np.mean(tmp_values))
-    start+=1
-watch_trend_mean = np.mean(watch_trend[len(watch_trend) - len(watch_resid_prediction):])
-watch_trend_prediction = np.full(len(watch_resid_prediction), watch_trend_mean)
+# Determine good ARIMA Model candidates using the ACF and PACF Plots and choose the best one
+# p, d, q = [0,1,2,4,6,7,18,19,31], [0], [0,1,2,3,4,6,10,12,42]
+# candidates = generate_arima_candidates(p, d, q)
+# eval_df = evaluate_model_with_Plots(art_residuals, candidates, eval_df, index='art')
+# print("Head")
+# print(eval_df.head(40))
+# print("Tail")
+# print(eval_df.tail(41))
 
-# Forecast the index by building up the original scale again for each data point
-watch_forecast = watch_resid_prediction + watch_seasonal_prediction + watch_trend_prediction
-watch_forecast_2 = watch_resid_prediction + watch_seasonal_prediction + watch_trend_prediction_2
+# Evaluate Art Residual ARIMA model with Box-Jenkins model diagnostic
+arima_resid_art = (6,0,10) 
+# check_model_with_BoxJenkins(art_residuals, arima_resid_art, seasonal_start_cd=None, index='art')
+# Residuals are white noise
 
-# Plot
-x_axis = pd.date_range(start=watch_df_decomp.observed.index[0], end=watch_df_decomp.observed.index[-1], freq = 'MS')
-x_axis_forecast = pd.date_range(start=watch_residuals_test.index[0], end = end_long, freq = 'MS')
-plt.plot(x_axis, watch_df_decomp.observed.values, color="blue", label="observed data")
-plt.plot(x_axis_forecast, watch_forecast, color="red", label="forecast", linestyle="--")
-plt.legend(loc='best')
-plt.title('Long term forecast of watch index values using ARIMA decomposition-forecasting-recombination strategy')
-plt.xlabel('Time')
-plt.ylabel('Index value')
-plt.show()
+# Save optimal model
+# art_model_resid = create_model(art_residuals_train, arima_resid_art, seasonal_order=None, index='art_residuals') # Only run once to save the optimal model
+
+# Now that model is trained + evaluated, use it to forecast
+# Forecast residual
+# long_term = art_residuals_train.shape[0]
+# ref_start = art_residuals.index[-1] # 2023-03-01
+# end_long = "2049-12-01"
+# art_resid_prediction = forecast_model(art_residuals, art_residuals_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='art_residuals')
+# forecast_decomp_recomb_strategy(art_df_decomp.observed, art_residuals_test, art_resid_prediction, art_df_decomp.seasonal, art_df_decomp.trend, end_long, method='walk_forward', index='art', freq='MS')
 
 ### STATIONARITY TESTS ###
 
@@ -679,6 +676,11 @@ plt.show()
 # print(f"Is the data stationary according to the KPSS Test? {stationary}") # True
 # stationary = is_stationary_with_ADF(art_df_diff, significance_level=0.05)
 # print(f"Is the data stationary according to the ADF Test? {stationary}") # True
+
+# stationary = is_stationary_with_KPSS(art_residuals, significance_level=0.05)
+# print(f"Are the residuals stationary according to the KPSS Test? {stationary}") # True
+# stationary = is_stationary_with_ADF(art_residuals, significance_level=0.05)
+# print(f"Are the residuals stationary according to the ADF Test? {stationary}") # True
 
 # Evaluate Stationarity of the seasonal component wine
 # stationary = is_stationary_with_KPSS(wine_seasonal, significance_level=0.05)
@@ -865,6 +867,22 @@ plt.show()
 
 # fig = plot_pacf(watch_residuals, color = "green", lags=50) # Plotting most interesting subset of the PACF
 # plt.title('Watch Index Residuals PACF Zoomed')
+# plt.show()
+
+# fig = plot_acf(art_residuals, color = "blue", lags=len(art_residuals)-1) # ACF cannot be longer than the data.
+# plt.title('Art Index Residuals ACF')
+# plt.show()
+
+# fig = plot_acf(art_residuals, color = "blue", lags=50) # Plotting most interesting subset of the ACF
+# plt.title('Art Index Residuals ACF Zoomed')
+# plt.show()
+
+# fig = plot_pacf(art_residuals, color = "green", lags=int((len(art_residuals)/2)-1)) # PACF cannot be longer than 50% of the data
+# plt.title('Art Index Residuals PACF')
+# plt.show()
+
+# fig = plot_pacf(art_residuals, color = "green", lags=50) # Plotting most interesting subset of the PACF
+# plt.title('Art Index Residuals PACF Zoomed')
 # plt.show()
 
 
