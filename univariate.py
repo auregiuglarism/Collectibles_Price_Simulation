@@ -430,10 +430,14 @@ arima_wine = (3,1,3)
 # P, D, Q = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13], [0], [1, 2, 4, 5, 6, 7, 12]
 # seasonal_candidates = generate_arima_candidates(P, D, Q, seasonal=True, m=12)
 # eval_df = evaluate_model_with_Plots(wine_df_decomp.observed, seasonal_candidates, eval_df, seasonal=True, index='wine', arima_order=arima_wine)
-# print(eval_df)
+# print("Head")
+# print(eval_df.head(42))
+# print("Tail")
+# print(eval_df.tail(43))
 
-sarima_wine = [(3,1,3), ()] # m needs to be > to AR and MA order of ARIMA
+sarima_wine = [(3,1,3), (3,0,6,12)] # m needs to be > to AR and MA order of ARIMA 
 # check_model_with_BoxJenkins(wine_train, sarima_wine[0], sarima_wine[1], index='wine')
+# (3, 0, 6, 12) gives a slightly lower performance than the optimal but the residuals are white noise so choose this one.
 
 # Save optimal (S)ARIMA model
 # wine_model = create_model(wine_train, arima_wine, seasonal_order=None, index='wine') # Only run once to save the optimal model
