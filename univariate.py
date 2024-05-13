@@ -480,10 +480,14 @@ arima_watch = (2,1,3)
 # P, D, Q = [1,2,6,7,8,9,10,12,13,14], [0], [1,3,4,8,9,11,12]
 # seasonal_candidates = generate_arima_candidates(P, D, Q, seasonal=True, m=12) 
 # eval_df = evaluate_model_with_Plots(watch_df_decomp.observed, seasonal_candidates, eval_df, seasonal=True, index='watch', arima_order=arima_watch)
-# print(eval_df)
+# print("Head")
+# print(eval_df.head(35))
+# print("Tail")
+# print(eval_df.tail(37))
 
-sarima_watch = [(2,1,3), ()] # Seasonal order needs to be > to AR and MA order
+sarima_watch = [(2,1,3), (1,0,3,12)] # Seasonal order needs to be > to AR and MA order
 # check_model_with_BoxJenkins(watch_train, sarima_watch[0], sarima_watch[1], index='watch')
+# Residuals are white noise.
 
 # Save optimal (S)ARIMA model
 # watch_model = create_model(watch_train, arima_watch, seasonal_order=None, index='watch') # Only run once to save the optimal model
@@ -499,7 +503,7 @@ ref_start = watch_df_decomp.observed.index[-1] # "2023-12-01"
 end_short = "2024-12-01"
 end_medium = "2028-12-01"
 end_long = "2034-02-01"
-# forecast_model(watch_df_decomp.observed, watch_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='watch')
+# forecast_model(watch_df_decomp.observed, watch_test, long_term, "Long", end_date=end_long, model=None, seasonal=True, index='watch')
 
 # ART 
 # Initial Split into train and test (for after split cross validation)
