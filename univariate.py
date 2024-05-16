@@ -12,10 +12,6 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 import statsmodels.api as sm
 
-# TODO : Justify the choice of SARIMA parameters for each asset in the report
-# TODO : Continue Fine-tuning Parameters
-# TODO : Find a way to remotely train or train faster the heavy SARIMA model for each asset
-
 # Links to understand more about SARIMA Parameters : 
 
 # https://en.wikipedia.org/wiki/Box%E2%80%93Jenkins_method
@@ -453,7 +449,7 @@ ref_start = wine_df_decomp.observed.index[-1] # "2023-12-31"
 end_short = "2024-12-31"
 end_medium = "2028-12-31"
 end_long = "2037-06-30"
-# forecast_model(wine_df_decomp.observed, wine_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='wine')
+# forecast_model(wine_df_decomp.observed, wine_test, long_term, "Long", end_date=end_long, model=None, seasonal=True, index='wine')
 
 # WATCH 
 # Initial Split into train and test (for after split cross validation)
@@ -523,25 +519,29 @@ eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE",
 # print(eval_df.tail(41))
 
 # Evaluate Art ARIMA model with Box-Jenkins model diagnostic
-arima_art = (6,1,8)
+arima_art = (13,1,6) 
 # check_model_with_BoxJenkins(art_train, arima_art, seasonal_start_cd=None, index='art')
 # (6,1,8) gives the best performance but the residuals aren't white noise, they fail the test.
-# (13,1,12) gives a lower performance but the residuals are white noise
+# Same reasoning for (4,1,2) --> pick this one for sarima as m = 6
+# (13,1,6) gives a lower performance but the residuals are white noise.
 
 # Seasonal decomposition suggests underlying complex seasonal pattern so we will now optimize the SARIMA model
 # ACF and PACF show a seasonal pattern repeating every 6 lags (ACF + PACF of the original data)
 
 # Seasonality pattern repeating every 6 lags, thus set m=6. (ACF of the seasonal component)
-# However since m > max(p,q) we can set m=12 to still capture the seasonality efficiently
 
 # Candidates are chosen based on the ACF and PACF plots
 # P, D, Q = [0,2,3,4,5,6,7,12], [0], [0,2,3,4,6,12]
-# seasonal_candidates = generate_arima_candidates(P, D, Q, seasonal=True, m=12)
-# eval_df = evaluate_model_with_Plots(art_df_decomp.observed, seasonal_candidates, eval_df, seasonal=True, index='art', arima_order=arima_art)
-# print(eval_df.head(len(eval_df)-1))
+# seasonal_candidates = generate_arima_candidates(P, D, Q, seasonal=True, m=6)
+# eval_df = evaluate_model_with_Plots(art_df_decomp.observed, seasonal_candidates, eval_df, seasonal=True, index='art', arima_order=(4,1,2))
+# print("Head")
+# print(eval_df.head(24))
+# print("Tail")
+# print(eval_df.tail(28))
 
-sarima_art = [(6,1,8),()]
+sarima_art = [(4,1,2),(5,0,6,6)]
 # check_model_with_BoxJenkins(art_train, sarima_art[0], sarima_art[1], index='art')
+# Residuals are white noise.
 
 # Save optimal (S)ARIMA model
 # art_model = create_model(art_train, arima_art, seasonal_order=None, index='art') # Only run once to save the optimal model
@@ -557,7 +557,7 @@ ref_start = art_df_decomp.observed.index[-1] # "2023-09-01"
 end_short = "2024-09-01"
 end_medium = "2028-09-01"
 end_long = "2051-02-01"
-# forecast_model(art_df_decomp.observed, art_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='art')
+# forecast_model(art_df_decomp.observed, art_test, long_term, "Long", end_date=end_long, model=None, seasonal=True, index='art')
 
 ### ARIMA (p,d,q) Model Forecasting (Second Method) Decomposition-forecasting-recombination strategy ####
 
