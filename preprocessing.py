@@ -574,11 +574,11 @@ def main(univariate=True):
 
     if univariate == True:
         ## Ready for univariate work ##
-        return wine_df_decomp, watch_df_decomp, art_df_decomp, crypto_df_decomp, gold_df_decomp, sp500_df_decomp, cpi_df_decomp, bond_yield_df_decomp
+        return wine_df_decomp, watch_df_decomp, art_df_decomp
         
     else:
         # Ready for multivariate work
-        return wine_df_decomp, watch_df_decomp, art_df_decomp, 
+        return wine_df_decomp, watch_df_decomp, art_df_decomp,  crypto_df_decomp, gold_df_decomp, sp500_df_decomp, cpi_df_decomp, bond_yield_df_decomp
 
 # main(univariate=True) # Uncomment to test pre-processing
 
