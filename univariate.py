@@ -386,7 +386,7 @@ art_df_diff = art_df_decomp.observed.diff().dropna()
 # Smoothing the data with a 30 day moving average messes (for some reason) the stationarity of the data.
 # Increasing the window size makes it worse.
 
-### (S)ARIMA (p,d,q)*(P,D,Q)**M Model Forecasting (First Method) ###
+### (S)ARIMA (p,d,q)*(P,D,Q)m Model Forecasting (First Method) ###
 
 # First order differencing makes the data stationary so I will set my d = 1 as confirmed by ADF + KPSS tests
 
@@ -559,7 +559,7 @@ end_medium = "2028-09-01"
 end_long = "2051-02-01"
 # forecast_model(art_df_decomp.observed, art_test, long_term, "Long", end_date=end_long, model=None, seasonal=True, index='art')
 
-### ARIMA (p,d,q) Model Forecasting (Second Method) Decomposition-forecasting-recombination strategy ####
+### (S)ARIMA (p,d,q)*(P,D,Q)m Model Forecasting (Second Method) Decomposition-forecasting-recombination strategy ####
 
 # WINE
 # Initial Split into train and test (for after split cross validation)
