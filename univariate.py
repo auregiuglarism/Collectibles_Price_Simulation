@@ -12,7 +12,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 import statsmodels.api as sm
 
-# Links to understand more about SARIMA Parameters : 
+# Links to understand more about (S)ARIMA Parameters : 
 
 # https://en.wikipedia.org/wiki/Box%E2%80%93Jenkins_method
 # https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average
