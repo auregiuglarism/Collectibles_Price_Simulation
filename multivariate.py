@@ -19,9 +19,54 @@ import statsmodels.api as sm
 
 def compute_covariance(cov_df, index_df, variables):
     covariances =  []
+
+    start_date = index_df.index[0].split("-")
+    year_start = start_date[0]
+    month_start = start_date[1]
+    end_date = index_df.index[-1].split("-")
+    year_end = end_date[0]
+    month_end = end_date[1]
+
     for variable in variables:
-        cov = np.ma.cov(index_df, variable, rowvar=False)
+
+        if len(variable) > len(index_df): # If the variable has more data than the index
+            for index, row in variable.items():
+                date = index.split("-")
+                year = date[0]
+                month = date[1]
+
+                if year == year_start and month == month_start:
+                    start = index
+
+                if year == year_end and month == month_end:
+                    end = index
+                
+            variable = variable[start:end]
+
+        else: # If the variable has less data than the index
+            start_date = variable.index[0].split("-")
+            year_start = start_date[0]
+            month_start = start_date[1]
+            end_date = variable.index[-1].split("-")
+            year_end = end_date[0]
+            month_end = end_date[1]
+
+            for index, row in index_df.items():
+                date = index.split("-")
+                year = date[0]
+                month = date[1]
+
+                if year == year_start and month == month_start:
+                    start = index
+
+                if year == year_end and month == month_end:
+                    end = index
+
+            index_df = index_df[start:end]
+
+        cov = np.cov(index_df, variable, rowvar=False)
         covariances.append(cov)
+        print(covariances)
 
     cov_df = pd.concat(cov_df, pd.DataFrame([covariances]), ignore_index=True)
     return cov_df

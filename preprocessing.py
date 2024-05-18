@@ -373,17 +373,7 @@ def adjust_bond_yield_inflation(bond_yield_df, inflation_yearly_df):
 
 ##### SEASONAL DECOMPOSITION #####
 
-# Useful later for model fitting but not for correlation analysis
-# Decompose the data (seasonality, trend and residual):
-def decomp_multiplicative(data, freq=12, name=''): # Uncomment to see the decomposition
-    data_decomp = seasonal_decompose(data.set_index('Date'), model='multiplicative', period=12) 
-    # fig = data_decomp.plot()
-    # plt.suptitle(f'{name} multiplicative seasonal decomposition', y=1)
-    # fig.set_size_inches(16, 8)
-    # plt.xticks([data.index[0], data.index[len(data)//2], data.index[-1]])
-    # plt.show()
-    return data_decomp
-
+# Decompose the data (seasonality, trend and residual): ARIMA is an additive model
 def decomp_additive(data, freq=12, name=''): # Uncomment to see the decomposition
     data_decomp = seasonal_decompose(data.set_index('Date'), model='additive', period=12) 
     # fig = data_decomp.plot()
