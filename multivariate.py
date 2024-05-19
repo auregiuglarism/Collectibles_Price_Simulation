@@ -53,16 +53,96 @@ def compute_covariance(cov_df, index_df, variables):
                 cov = np.cov(index_df, variable)
 
         if len(variable) < len(index_df): # If the variable has less data than the index
-            last_row = index_df.loc[year_var_end+"-"+month_var_end:].index[0]
-            index_df_cov = index_df.loc[year_var_first+"-"+month_var_first:last_row]
-            cov = np.cov(index_df_cov, variable)
+            if int(year_df_end) <= int(year_var_end) and int(month_df_end) < int(month_var_end): # If the variable ends after the index
+                last_row = index_df.loc[year_df_end+"-"+month_df_end:].index[0]
+                variable = variable.loc[year_var_first+"-"+month_var_first:last_row]
 
-        print(cov)
+                last_row = index_df.loc[year_df_end+"-"+month_df_end:].index[0]
+                index_df_cov = index_df.loc[year_var_first+"-"+month_var_first:last_row] 
+
+                if index_df_cov.index[-1].split("-")[1] != variable.index[-1].split("-")[1]: # If slice ends in different month
+                    index_df_cov = index_df_cov[:-1]
+                cov = np.cov(index_df_cov, variable)
+
+            else: # If the variable ends before the index
+                last_row = index_df.loc[year_var_end+"-"+month_var_end:].index[0]
+                index_df_cov = index_df.loc[year_var_first+"-"+month_var_first:last_row]
+                cov = np.cov(index_df_cov, variable)
+
         covariances.append(cov)
 
     cov_df.loc[len(cov_df)] = [covariances[0], covariances[1], covariances[2], covariances[3], covariances[4]]
     return cov_df
-        
+
+def compute_pearson_coeff(pearson_df, index_df, variables):
+    pearson_coeffs = []
+
+    start_date = index_df.index[0].split("-")
+    year_df_first = start_date[0]
+    month_df_first = start_date[1]
+    end_date = index_df.index[-1].split("-")
+    year_df_end = end_date[0]
+    month_df_end = end_date[1]
+
+    for variable in variables:
+
+        last_date = variable.index[-1].split("-")
+        year_var_end = last_date[0]
+        month_var_end = last_date[1]
+        first_date = variable.index[0].split("-")
+        year_var_first = first_date[0]
+        month_var_first = first_date[1]
+
+        if (len(variable) > len(index_df)): # If the variable has more data than the index and ends later
+            if int(year_var_end) < int(year_df_end): # If the variable ends before the index
+                last_row = variable.loc[year_var_end+"-"+month_var_end:].index[0]
+                variable = variable.loc[year_df_first+"-"+month_df_first:last_row]
+
+                last_row = index_df.loc[year_var_end+"-"+month_var_end:].index[0]
+                index_df_coef = index_df.loc[year_df_first+"-"+month_df_first:last_row]
+
+                # Substract the sample mean
+                index_df_coef = index_df_coef - index_df_coef.mean()
+                variable = variable - variable.mean()
+                coef = np.corrcoef(index_df_coef, variable)
+            else:
+                last_row = index_df.loc[year_df_end+"-"+month_df_end:].index[0]
+                variable = variable.loc[year_df_first+"-"+month_df_first:last_row]
+
+                # Substract the sample mean 
+                index_df_coef = index_df - index_df.mean() 
+                variable = variable - variable.mean()
+                coef = np.corrcoef(index_df_coef, variable)
+
+        if len(variable) < len(index_df): # If the variable has less data than the index
+            if int(year_df_end) <= int(year_var_end) and int(month_df_end) < int(month_var_end): # If the variable ends after the index
+                last_row = index_df.loc[year_df_end+"-"+month_df_end:].index[0]
+                variable = variable.loc[year_var_first+"-"+month_var_first:last_row]
+
+                last_row = index_df.loc[year_df_end+"-"+month_df_end:].index[0]
+                index_df_cov = index_df.loc[year_var_first+"-"+month_var_first:last_row] 
+
+                if index_df_cov.index[-1].split("-")[1] != variable.index[-1].split("-")[1]: # If slice ends in different month
+                    index_df_cov = index_df_cov[:-1]
+                
+                # Substract the sample mean 
+                index_df_cov = index_df_cov - index_df_cov.mean()
+                variable = variable - variable.mean()
+                coef = np.corrcoef(index_df_cov, variable)
+
+            else: # If the variable ends before the index
+                last_row = index_df.loc[year_var_end+"-"+month_var_end:].index[0]
+                index_df_cov = index_df.loc[year_var_first+"-"+month_var_first:last_row]
+                # Substract the sample mean 
+                index_df_cov = index_df_cov - index_df_cov.mean()
+                variable = variable - variable.mean()
+                coef = np.corrcoef(index_df_cov, variable)
+
+        pearson_coeffs.append(coef)
+
+    pearson_df.loc[len(pearson_df)] = [pearson_coeffs[0], pearson_coeffs[1], pearson_coeffs[2], pearson_coeffs[3], pearson_coeffs[4]]
+    return pearson_df
+
 ##### MODELS #####
 
 def create_model(train, order, exogenous_var, seasonal_order=None, index='wine'):
@@ -195,15 +275,20 @@ def split_cross_validation(data, order, index='wine', seasonal_order=None, seaso
 wine_df, watch_df, art_df, crypto_df, gold_df, sp500_df, cpi_df, bond_yield_df = preprocessing.main(univariate=False)
 
 # Compute covariance matrix between each pair of correlated variables and index
-# wine_cov = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
-# wine_cov = compute_covariance(wine_cov, wine_df.observed, [crypto_df.observed, gold_df.observed, sp500_df.observed, cpi_df.observed, bond_yield_df.observed])
-# watch_cov = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
-# watch_cov = compute_covariance(watch_cov, watch_df.observed, [crypto_df.observed, gold_df.observed, sp500_df.observed, cpi_df.observed, bond_yield_df.observed])
-# Does not finish running for art
+wine_cov = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
+wine_cov = compute_covariance(wine_cov, wine_df.observed, [crypto_df.observed, gold_df.observed, sp500_df.observed, cpi_df.observed, bond_yield_df.observed])
+watch_cov = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
+watch_cov = compute_covariance(watch_cov, watch_df.observed, [crypto_df.observed, gold_df.observed, sp500_df.observed, cpi_df.observed, bond_yield_df.observed])
 art_cov = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
 art_cov = compute_covariance(art_cov, art_df.observed, [crypto_df.observed, gold_df.observed, sp500_df.observed, cpi_df.observed, bond_yield_df.observed])
-# Compute Pearson correlation coefficient between each pair of correlated variables and index
 
+# Compute Pearson correlation coefficient between each pair of correlated variables and index
+wine_pearson_coeff = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
+wine_pearson_coeff = compute_pearson_coeff(wine_pearson_coeff, wine_df.observed, [crypto_df.observed, gold_df.observed, sp500_df.observed, cpi_df.observed, bond_yield_df.observed])
+watch_pearson_coeff = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
+watch_pearson_coeff = compute_pearson_coeff(watch_pearson_coeff, watch_df.observed, [crypto_df.observed, gold_df.observed, sp500_df.observed, cpi_df.observed, bond_yield_df.observed])
+art_pearson_coeff = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
+art_pearson_coeff = compute_pearson_coeff(art_pearson_coeff, art_df.observed, [crypto_df.observed, gold_df.observed, sp500_df.observed, cpi_df.observed, bond_yield_df.observed])
 # Test the significance of the correlation coefficient with a t-test
 
 # Select the most correlated variable for each index to use with ARIMAX
