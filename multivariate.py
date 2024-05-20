@@ -275,26 +275,34 @@ def split_cross_validation(data, order, index='wine', seasonal_order=None, seaso
 wine_df, watch_df, art_df, crypto_df, gold_df, sp500_df, cpi_df, bond_yield_df = preprocessing.main(univariate=False)
 
 # Compute covariance matrix between each pair of correlated variables and index
+# Log transform the data to stabilize variance and get more accurate covariance
 wine_cov = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
-wine_cov = compute_covariance(wine_cov, wine_df.observed, [crypto_df.observed, gold_df.observed, sp500_df.observed, cpi_df.observed, bond_yield_df.observed])
+wine_cov = compute_covariance(wine_cov, np.log(wine_df.observed), [np.log(crypto_df.observed), np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
 watch_cov = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
-watch_cov = compute_covariance(watch_cov, watch_df.observed, [crypto_df.observed, gold_df.observed, sp500_df.observed, cpi_df.observed, bond_yield_df.observed])
+watch_cov = compute_covariance(watch_cov, np.log(watch_df.observed), [np.log(crypto_df.observed), np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
 art_cov = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
-art_cov = compute_covariance(art_cov, art_df.observed, [crypto_df.observed, gold_df.observed, sp500_df.observed, cpi_df.observed, bond_yield_df.observed])
-print(wine_cov)
-print(watch_cov)
-print(art_cov)
+art_cov = compute_covariance(art_cov, np.log(art_df.observed), [np.log(crypto_df.observed), np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
+# print(wine_cov)
+# print(watch_cov)
+# print(art_cov)
+
+# Big covariance between Gold and Wine, Crypto and Watch, SP500 and Art
+# Bond Yield has a negative covariance with all indexes, and is a bit biased, because I cannot log transform it since it has negative values
 
 # Compute Pearson correlation coefficient between each pair of correlated variables and index
+# Log transform the data to stabilize variance and get more accurate coefficient
 wine_pearson_coeff = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
-wine_pearson_coeff = compute_pearson_coeff(wine_pearson_coeff, wine_df.observed, [crypto_df.observed, gold_df.observed, sp500_df.observed, cpi_df.observed, bond_yield_df.observed])
+wine_pearson_coeff = compute_pearson_coeff(wine_pearson_coeff, np.log(wine_df.observed), [np.log(crypto_df.observed), np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
 watch_pearson_coeff = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
-watch_pearson_coeff = compute_pearson_coeff(watch_pearson_coeff, watch_df.observed, [crypto_df.observed, gold_df.observed, sp500_df.observed, cpi_df.observed, bond_yield_df.observed])
+watch_pearson_coeff = compute_pearson_coeff(watch_pearson_coeff, np.log(watch_df.observed), [np.log(crypto_df.observed), np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
 art_pearson_coeff = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
-art_pearson_coeff = compute_pearson_coeff(art_pearson_coeff, art_df.observed, [crypto_df.observed, gold_df.observed, sp500_df.observed, cpi_df.observed, bond_yield_df.observed])
-# print(wine_pearson_coeff)
-# print(watch_pearson_coeff)
-# print(art_pearson_coeff)
+art_pearson_coeff = compute_pearson_coeff(art_pearson_coeff, np.log(art_df.observed), [np.log(crypto_df.observed), np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
+print(wine_pearson_coeff)
+print(watch_pearson_coeff)
+print(art_pearson_coeff)
+
+# Big correlation between Gold and Wine, Crypto and Watch, SP500+CPI and Art
+# Bond Yield has a negative correlation with all indexes, and is a bit biased, because I cannot log transform it since it has negative values
 
 # Test the significance of the correlation coefficient with a t-test
 
