@@ -10,10 +10,14 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 import statsmodels.api as sm
 
+from scipy.stats import ttest_ind
+
 # Links to understand more about correlation, (S)ARIMAX, covariance
 
 # https://www.statology.org/how-to-read-covariance-matrix/#:~:text=The%20values%20along%20the%20diagonals%20of%20the%20matrix,matrix%20represent%20the%20covariances%20between%20the%20various%20subjects.
 # https://builtin.com/data-science/covariance-matrix
+
+# https://datagy.io/t-test-python/
 
 # TODO : Read paper : time series analysis to modeling to forecast 
 # TODO : Start correlation analysis
@@ -142,6 +146,20 @@ def compute_pearson_coeff(pearson_df, index_df, variables):
 
     pearson_df.loc[len(pearson_df)] = [pearson_coeffs[0], pearson_coeffs[1], pearson_coeffs[2], pearson_coeffs[3], pearson_coeffs[4]]
     return pearson_df
+
+def compute_t_test(index_df, variable, significance_level=0.05):
+    t_stat, p_val = ttest_ind(index_df, variable)
+    print(f"t-statistic: {t_stat}")
+    print(f"P-value: {p_val}")
+
+    if p_val < significance_level:
+        # Reject the null hypothesis
+        print("The means differ significantly, correlation is significant and tells us the direction")
+    else:
+        # Accept the null hypothesis
+        print("There is so significant difference between the means, correlation is not significant")
+    return t_stat, p_val
+
 
 ##### MODELS #####
 
@@ -297,14 +315,18 @@ watch_pearson_coeff = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", 
 watch_pearson_coeff = compute_pearson_coeff(watch_pearson_coeff, np.log(watch_df.observed), [np.log(crypto_df.observed), np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
 art_pearson_coeff = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
 art_pearson_coeff = compute_pearson_coeff(art_pearson_coeff, np.log(art_df.observed), [np.log(crypto_df.observed), np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
-print(wine_pearson_coeff)
-print(watch_pearson_coeff)
-print(art_pearson_coeff)
+# print(wine_pearson_coeff)
+# print(watch_pearson_coeff)
+# print(art_pearson_coeff)
 
 # Big correlation between Gold and Wine, Crypto and Watch, SP500+CPI and Art
 # Bond Yield has a negative correlation with all indexes, and is a bit biased, because I cannot log transform it since it has negative values
 
-# Test the significance of the correlation coefficient with a t-test
+# Test the significance of the correlation coefficient with a t-test (two sample), alternative: Mann-Whitney U test (which is non-parametric)
+# compute_t_test(np.log(wine_df.observed), np.log(gold_df.observed)) # Significant correlation
+# compute_t_test(np.log(watch_df.observed), np.log(crypto_df.observed)) # Significant correlation
+# compute_t_test(np.log(art_df.observed), np.log(sp500_df.observed)) # Significant correlation
+# compute_t_test(np.log(wine_df.observed), np.log(cpi_df.observed)) # significant correlation
 
 # Select the most correlated variable for each index to use with ARIMAX
 
