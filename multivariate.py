@@ -20,7 +20,8 @@ from scipy.stats import ttest_ind
 # https://datagy.io/t-test-python/
 
 # TODO : Read paper : time series analysis to modeling to forecast 
-# TODO : Start correlation analysis
+# TODO : Include an exogenous variable about the real estate market in the US and other exogenous twins about non-US markets for each exogenous variable that alread exists.
+# TODO : Do multivariate forecasting, and write down accuracy for each asset.
 
 ##### CORRELATION #####
 

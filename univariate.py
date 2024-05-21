@@ -12,6 +12,11 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 import statsmodels.api as sm
 
+# TODO: Implement rolling-window forecasting approach to train the model and forecast data
+# TODO: correct mean forecast in resid - recomb strategy to get a more accurate forecast
+# TODO: Report : Include a more detailed explanation (since you are the first one) of the indices used in this thesis (art, watch and wine) + sources
+# TODO: Report : Include a future work section of what could be done from here on out after my work for future researchers
+
 # Links to understand more about (S)ARIMA Parameters : 
 
 # https://en.wikipedia.org/wiki/Box%E2%80%93Jenkins_method
