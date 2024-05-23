@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import preprocessing   
 
 from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 from statsmodels.tsa.arima.model import ARIMAResults
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
@@ -166,7 +167,7 @@ def compute_t_test(index_df, variable, significance_level=0.05):
 
 def create_model(train, order, exogenous_var, seasonal_order=None, index='wine'):
     if seasonal_order == None: # ARIMAX Model
-        model = ARIMA(train, trend='n', order=order, 
+        model = SARIMAX(train, trend='n', order=order,
                       exog=exogenous_var,  
                       enforce_stationarity=True,
                       enforce_invertibility=True) 
@@ -175,7 +176,7 @@ def create_model(train, order, exogenous_var, seasonal_order=None, index='wine')
         fit_results.save(f'models\{index}_arimax.pkl') # Comment this when evaluating multiple models
         
     else: # SARIMAX Model
-        model = ARIMA(train, trend='n', order=order,  
+        model = SARIMAX(train, trend='n', order=order,  
                 exog=exogenous_var,
                 seasonal_order=seasonal_order,
                 enforce_stationarity=True,
@@ -261,6 +262,8 @@ def split_cross_validation(data, order, exog, index='wine', seasonal_order=None,
         split_data = data[:int(split*len(data))]
         train = split_data[:int(0.8*len(split_data))]
         test = split_data[int(0.8*len(split_data)):]
+
+        print(exog)
         
         fit_results, _ = create_model(train, order, exog, seasonal_order, index)
         _, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean, rmse, rmse_baseline, rmse_baseline_mean, mape, mape_baseline, mape_baseline_mean = test_model(test, fit_results, seasonal, index)
@@ -293,7 +296,7 @@ def evaluate_model_with_Plots(data, candidates, eval_df, exog, seasonal=False, i
     for candidate in candidates:
         if seasonal == False:
             # Split cross validation
-            aic, bic, mae, mse, rmse, mape, mae_bas, mse_bas, rmse_bas, mape_bas, mae_mean, mse_mean, rmse_mean, mape_mean = split_cross_validation(data, candidate, exog, index, None, seasonal)
+            aic, bic, mae, mse, rmse, mape, mae_bas, mse_bas, rmse_bas, mape_bas, mae_mean, mse_mean, rmse_mean, mape_mean = split_cross_validation(data, candidate, index, None, seasonal)
             
             # Store evaluation information (those are already avg calculated in the split cross validation function)
             eval_df.loc[len(eval_df)] = [candidate, None, aic, bic, mae, mse, rmse, mape]
@@ -361,7 +364,6 @@ def align_data(index_df, exog):
     
     # They now have the same length, but not exactly the same dates day for day
     exog.index = index_df.index
-    exog = exog.reindex(index_df.index)
 
     return index_df, exog
 
@@ -409,10 +411,11 @@ art_pearson_coeff = compute_pearson_coeff(art_pearson_coeff, np.log(art_df.obser
 # WINE
 arima_wine = (3,1,3)
 wine_adjusted, exog_wine = align_data(wine_df.observed, gold_df.observed)
-
+print(wine_adjusted)
+print(exog_wine)
 # Evaluate the model
 eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
-eval_df = evaluate_model_with_Plots(wine_adjusted.values, [arima_wine], eval_df, exog_wine.values, seasonal=False, index='wine')
+eval_df = evaluate_model_with_Plots(wine_adjusted, [arima_wine], eval_df, exog_wine, seasonal=False, index='wine')
 print(eval_df)
 
 # Save optimal model
