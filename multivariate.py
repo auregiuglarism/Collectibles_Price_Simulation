@@ -193,10 +193,10 @@ def create_model(train, order, exogenous_var, seasonal_order=None, index='wine')
 
 def test_model(test, model=None, seasonal=False, index='wine'): # Testing data
     if model == None and seasonal == False: # ARIMA Model
-        model = ARIMAResults.load(f'models\{index}_arima.pkl')
+        model = ARIMAResults.load(f'models\{index}_arimax.pkl')
     
     elif model == None and seasonal == True: # SARIMA Model
-        model = ARIMAResults.load(f'models\{index}_sarima.pkl')
+        model = ARIMAResults.load(f'models\{index}_sarimax.pkl')
 
     # Testing Forecast
     forecast_steps = test.shape[0]
@@ -236,7 +236,7 @@ def test_model(test, model=None, seasonal=False, index='wine'): # Testing data
 
     return yhat_test, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean, rmse, rmse_baseline, rmse_baseline_mean, mape, mape_baseline, mape_baseline_mean
 
-def split_cross_validation(data, order, index='wine', seasonal_order=None, seasonal=False):
+def split_cross_validation(data, order, exog, index='wine', seasonal_order=None, seasonal=False):
     # Not using blocked cross-validation because there is not enough data for sufficient blocks
     # Using split cross validation instead with an 80/20 ratio at each split
     mae_l = []
@@ -262,7 +262,7 @@ def split_cross_validation(data, order, index='wine', seasonal_order=None, seaso
         train = split_data[:int(0.8*len(split_data))]
         test = split_data[int(0.8*len(split_data)):]
         
-        fit_results, _ = create_model(train, order, seasonal_order, index)
+        fit_results, _ = create_model(train, order, exog, seasonal_order, index)
         _, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean, rmse, rmse_baseline, rmse_baseline_mean, mape, mape_baseline, mape_baseline_mean = test_model(test, fit_results, seasonal, index)
 
         # Model Evaluation Metrics
@@ -287,6 +287,83 @@ def split_cross_validation(data, order, index='wine', seasonal_order=None, seaso
 
     # Return all eval metrics
     return np.mean(aic_l), np.mean(bic_l), np.mean(mae_l), np.mean(mse_l), np.mean(rmse_l), np.mean(mape_l), np.mean(mae_l_bas), np.mean(mse_l_bas), np.mean(rmse_l_bas), np.mean(mape_l_bas), np.mean(mae_l_mean), np.mean(mse_l_mean), np.mean(rmse_l_mean), np.mean(mape_l_mean)
+
+def evaluate_model_with_Plots(data, candidates, eval_df, exog, seasonal=False, index='wine', arima_order=None): 
+    # Take the model with the lowest eval metrics and errors
+    for candidate in candidates:
+        if seasonal == False:
+            # Split cross validation
+            aic, bic, mae, mse, rmse, mape, mae_bas, mse_bas, rmse_bas, mape_bas, mae_mean, mse_mean, rmse_mean, mape_mean = split_cross_validation(data, candidate, exog, index, None, seasonal)
+            
+            # Store evaluation information (those are already avg calculated in the split cross validation function)
+            eval_df.loc[len(eval_df)] = [candidate, None, aic, bic, mae, mse, rmse, mape]
+        
+        else:
+            # Split cross validation
+            aic, bic, mae, mse, rmse, mape, mae_bas, mse_bas, rmse_bas, mape_bas, mae_mean, mse_mean, rmse_mean, mape_mean = split_cross_validation(data, order=arima_order, exog=exog, index=index, seasonal_order=candidate, seasonal=seasonal)
+
+            # Store evaluation information (those are already avg calculated in the split cross validation function)
+            eval_df.loc[len(eval_df)] = [arima_order, candidate, aic, bic, mae, mse, rmse, mape]
+        
+    print("MAE Baseline:", mae_bas)
+    print("MSE Baseline:", mse_bas)
+    print("RMSE Baseline:", rmse_bas)
+    print("MAPE % Baseline:", mape_bas)
+    print("MAE Mean:", mae_mean)
+    print("MSE Mean:", mse_mean)
+    print("RMSE Mean:", rmse_mean)
+    print("MAPE % Mean:", mape_mean)
+        
+    return eval_df
+
+def align_data(index_df, exog):
+    start_date = index_df.index[0].split("-")
+    year_df_first = start_date[0]
+    month_df_first = start_date[1]
+    end_date = index_df.index[-1].split("-")
+    year_df_end = end_date[0]
+    month_df_end = end_date[1]
+
+    last_date = exog.index[-1].split("-")
+    year_var_end = last_date[0]
+    month_var_end = last_date[1]
+    first_date = exog.index[0].split("-")
+    year_var_first = first_date[0]
+    month_var_first = first_date[1]
+
+    if (len(exog) > len(index_df)): # If the variable has more data than the index and ends later
+        if int(year_var_end) < int(year_df_end): # If the variable ends before the index
+            last_row = exog.loc[year_var_end+"-"+month_var_end:].index[0]
+            exog = exog.loc[year_df_first+"-"+month_df_first:last_row]
+
+            last_row = index_df.loc[year_var_end+"-"+month_var_end:].index[0]
+            index_df = index_df.loc[year_df_first+"-"+month_df_first:last_row]
+            
+        else:
+            last_row = index_df.loc[year_df_end+"-"+month_df_end:].index[0]
+            exog = exog.loc[year_df_first+"-"+month_df_first:last_row]
+
+    if len(exog) < len(index_df): # If the variable has less data than the index
+        if int(year_df_end) <= int(year_var_end) and int(month_df_end) < int(month_var_end): # If the variable ends after the index
+            last_row = index_df.loc[year_df_end+"-"+month_df_end:].index[0]
+            exog = exog.loc[year_var_first+"-"+month_var_first:last_row]
+
+            last_row = index_df.loc[year_df_end+"-"+month_df_end:].index[0]
+            index_df = index_df.loc[year_var_first+"-"+month_var_first:last_row] 
+
+            if index_df.index[-1].split("-")[1] != exog.index[-1].split("-")[1]: # If slice ends in different month
+                index_df = index_df[:-1]   
+
+        else: # If the variable ends before the index
+            last_row = index_df.loc[year_var_end+"-"+month_var_end:].index[0]
+            index_df = index_df.loc[year_var_first+"-"+month_var_first:last_row]
+            
+    
+    # They now have the same length, but not exactly the same dates day for day
+    exog.index = index_df.index
+    exog = exog.reindex(index_df.index)
+
+    return index_df, exog
 
 ##### MAIN #####
 
@@ -329,7 +406,17 @@ art_pearson_coeff = compute_pearson_coeff(art_pearson_coeff, np.log(art_df.obser
 # compute_t_test(np.log(art_df.observed), np.log(sp500_df.observed)) # Significant correlation
 # compute_t_test(np.log(wine_df.observed), np.log(cpi_df.observed)) # significant correlation
 
-# Select the most correlated variable for each index to use with ARIMAX
+# WINE
+arima_wine = (3,1,3)
+wine_adjusted, exog_wine = align_data(wine_df.observed, gold_df.observed)
+
+# Evaluate the model
+eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
+eval_df = evaluate_model_with_Plots(wine_adjusted.values, [arima_wine], eval_df, exog_wine.values, seasonal=False, index='wine')
+print(eval_df)
+
+# Save optimal model
+# wine_model_exog = create_model(wine_df.observed, arima_wine, exog_wine, index='wine') 
 
 
 
