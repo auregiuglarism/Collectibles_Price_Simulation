@@ -185,36 +185,6 @@ def get_CPI_Index(path):
     df = pd.read_csv(path)
     return df
 
-def get_monthly_global_crypto_market_cap(path):
-    df = pd.read_csv(path)
-    df = df.drop(columns=['Drop_column'])
-
-    average_monthly_marketcap = []
-    date = []
-
-    temp_month = []
-    temp_month_values = []
-
-    for index, value in df.iterrows():
-        iter_date = str(value.iloc[0])
-        current_month = str(iter_date).split('-')[1]
-        market_cap = value.iloc[1]
-
-        if (current_month not in temp_month) and (temp_month != []):
-            amcp = (sum(temp_month_values)/len(temp_month_values))
-            date.append(previous_date) # if we took iter_date, the month would have already changed
-            average_monthly_marketcap.append(amcp)
-
-            temp_month = []
-            temp_month_values = []
-
-        temp_month.append(current_month) 
-        temp_month_values.append(market_cap)
-        previous_date = iter_date # to make sure we get the right month
-
-    df_average = pd.DataFrame({'Date': date, 'Market cap (monthly)': average_monthly_marketcap})
-    return df_average
-
 def get_monthly_gold_prices(path):
     df = pd.read_csv(path)
 
@@ -485,15 +455,6 @@ def main(univariate=True):
     # plt.title('Monthly CPI_Index (Inflation) United States')
     # plt.show()
 
-    # Global Crypto Market Cap (USD)
-    crypto_df = get_monthly_global_crypto_market_cap(r'data\Correlated Variables\Crypto\global_marketcap.csv')
-    # plt.plot(crypto_df['Date'], crypto_df['Market cap (monthly)'])
-    # plt.xlabel('Date')
-    # plt.ylabel('Market cap (USD)')
-    # plt.xticks([0, len(crypto_df)/2, len(crypto_df)-1])
-    # plt.title('Global Crypto Marketcap (Monthly Average)')
-    # plt.show()
-
     # Gold Prices (USD)
     gold_df = get_monthly_gold_prices(r'data\Correlated Variables\Gold Prices\data.csv')
     # plt.plot(gold_df['Date'], gold_df['Gold Price (monthly)'])
@@ -538,7 +499,6 @@ def main(univariate=True):
     # CPI Index is inflation itself no need to adjust
     # SP500 is already adjusted for inflation (Real column)
     sp500_df = sp500_df.drop(columns=['Nominal']) # Drop the nominal column
-    crypto_df = adjust_inflation(crypto_df, yearly_cpi_df)
     gold_df = adjust_inflation(gold_df, yearly_cpi_df)
 
     # Adjust inflation on the ten year bond yield
@@ -553,7 +513,6 @@ def main(univariate=True):
     watch_df_decomp = decomp_additive(watch_df, name='Watch Index')
     art_df = art_df.drop(0) # Drop first row of art_df first, will cause problems for forecasting otherwise later on
     art_df_decomp = decomp_additive(art_df, name='Art Index')
-    crypto_df_decomp = decomp_additive(crypto_df, name='Crypto Market Cap')
     gold_df_decomp = decomp_additive(gold_df, name='Gold Prices')
     sp500_df_decomp = decomp_additive(sp500_df, name='S&P 500 Index')
     cpi_df_decomp = decomp_additive(cpi_df, name='CPI Index')
@@ -568,7 +527,7 @@ def main(univariate=True):
         
     else:
         # Ready for multivariate work
-        return wine_df_decomp, watch_df_decomp, art_df_decomp,  crypto_df_decomp, gold_df_decomp, sp500_df_decomp, cpi_df_decomp, bond_yield_df_decomp
+        return wine_df_decomp, watch_df_decomp, art_df_decomp, gold_df_decomp, sp500_df_decomp, cpi_df_decomp, bond_yield_df_decomp
 
 # main(univariate=True) # Uncomment to test pre-processing
 

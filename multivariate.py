@@ -77,7 +77,7 @@ def compute_covariance(cov_df, index_df, variables):
 
         covariances.append(cov)
 
-    cov_df.loc[len(cov_df)] = [covariances[0], covariances[1], covariances[2], covariances[3], covariances[4]]
+    cov_df.loc[len(cov_df)] = [covariances[0], covariances[1], covariances[2], covariances[3]]
     return cov_df
 
 def compute_pearson_coeff(pearson_df, index_df, variables):
@@ -146,7 +146,7 @@ def compute_pearson_coeff(pearson_df, index_df, variables):
 
         pearson_coeffs.append(coef)
 
-    pearson_df.loc[len(pearson_df)] = [pearson_coeffs[0], pearson_coeffs[1], pearson_coeffs[2], pearson_coeffs[3], pearson_coeffs[4]]
+    pearson_df.loc[len(pearson_df)] = [pearson_coeffs[0], pearson_coeffs[1], pearson_coeffs[2], pearson_coeffs[3]]
     return pearson_df
 
 def compute_t_test(index_df, variable, significance_level=0.05):
@@ -372,16 +372,16 @@ def align_data(index_df, exog):
 ##### MAIN #####
 
 ## Load the data from pre-processing ##
-wine_df, watch_df, art_df, crypto_df, gold_df, sp500_df, cpi_df, bond_yield_df = preprocessing.main(univariate=False)
+wine_df, watch_df, art_df, gold_df, sp500_df, cpi_df, bond_yield_df = preprocessing.main(univariate=False)
 
 # Compute covariance matrix between each pair of correlated variables and index
 # Log transform the data to stabilize variance and get more accurate covariance
-wine_cov = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
-wine_cov = compute_covariance(wine_cov, np.log(wine_df.observed), [np.log(crypto_df.observed), np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
-watch_cov = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
-watch_cov = compute_covariance(watch_cov, np.log(watch_df.observed), [np.log(crypto_df.observed), np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
-art_cov = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
-art_cov = compute_covariance(art_cov, np.log(art_df.observed), [np.log(crypto_df.observed), np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
+wine_cov = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield"])
+wine_cov = compute_covariance(wine_cov, np.log(wine_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
+watch_cov = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield"])
+watch_cov = compute_covariance(watch_cov, np.log(watch_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
+art_cov = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield"])
+art_cov = compute_covariance(art_cov, np.log(art_df.observed), [ np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
 # print(wine_cov)
 # print(watch_cov)
 # print(art_cov)
@@ -391,24 +391,24 @@ art_cov = compute_covariance(art_cov, np.log(art_df.observed), [np.log(crypto_df
 
 # Compute Pearson correlation coefficient between each pair of correlated variables and index
 # Log transform the data to stabilize variance and get more accurate coefficient
-wine_pearson_coeff = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
-wine_pearson_coeff = compute_pearson_coeff(wine_pearson_coeff, np.log(wine_df.observed), [np.log(crypto_df.observed), np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
-watch_pearson_coeff = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
-watch_pearson_coeff = compute_pearson_coeff(watch_pearson_coeff, np.log(watch_df.observed), [np.log(crypto_df.observed), np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
-art_pearson_coeff = pd.DataFrame(columns = ["Crypto", "Gold", "SP500", "CPI", "Bond Yield"])
-art_pearson_coeff = compute_pearson_coeff(art_pearson_coeff, np.log(art_df.observed), [np.log(crypto_df.observed), np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
+wine_pearson_coeff = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield"])
+wine_pearson_coeff = compute_pearson_coeff(wine_pearson_coeff, np.log(wine_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
+watch_pearson_coeff = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield"])
+watch_pearson_coeff = compute_pearson_coeff(watch_pearson_coeff, np.log(watch_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
+art_pearson_coeff = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield"])
+art_pearson_coeff = compute_pearson_coeff(art_pearson_coeff, np.log(art_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
 # print(wine_pearson_coeff)
-print(watch_pearson_coeff)
+# print(watch_pearson_coeff)
 # print(art_pearson_coeff)
 
-# Big correlation between Gold and Wine, Crypto and Watch, SP500+CPI and Art
+# Big correlation between Gold and Wine, watch and CPI, SP500+CPI and Art
 # Bond Yield has a negative correlation with all indexes, and is a bit biased, because I cannot log transform it since it has negative values
 
 # Test the significance of the correlation coefficient with a t-test (two sample), alternative: Mann-Whitney U test (which is non-parametric)
 # compute_t_test(np.log(wine_df.observed), np.log(gold_df.observed)) # Significant correlation
-# compute_t_test(np.log(watch_df.observed), np.log(crypto_df.observed)) # Significant correlation
 # compute_t_test(np.log(art_df.observed), np.log(sp500_df.observed)) # Significant correlation
 # compute_t_test(np.log(wine_df.observed), np.log(cpi_df.observed)) # significant correlation
+# compute_t_test(np.log(watch_df.observed), np.log(cpi_df.observed)) # significant correlation
 
 # WINE
 arima_wine = (3,1,3)
@@ -424,12 +424,12 @@ arima_wine = (3,1,3)
 
 # WATCH
 arima_watch = (2,1,3)
-watch_adjusted, exog_watch = align_data(watch_df.observed, cpi_df.observed)
+# watch_adjusted, exog_watch = align_data(watch_df.observed, cpi_df.observed)
 
 # Evaluate the model
-eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
-eval_df = evaluate_model_with_Plots(watch_adjusted, [arima_watch], eval_df, exog_watch, seasonal=False, index='watch')
-print(eval_df)
+# eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
+# eval_df = evaluate_model_with_Plots(watch_adjusted, [arima_watch], eval_df, exog_watch, seasonal=False, index='watch')
+# print(eval_df)
 
 # Save optimal model
 # watch_model_exog = create_model(watch_adjusted, arima_watch, exog_watch, index='watch')
