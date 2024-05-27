@@ -429,9 +429,9 @@ watch_pearson_coeff = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yiel
 watch_pearson_coeff = compute_pearson_coeff(watch_pearson_coeff, np.log(watch_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
 art_pearson_coeff = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield"])
 art_pearson_coeff = compute_pearson_coeff(art_pearson_coeff, np.log(art_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
-print(wine_pearson_coeff)
-print(watch_pearson_coeff)
-print(art_pearson_coeff)
+# print(wine_pearson_coeff)
+# print(watch_pearson_coeff)
+# print(art_pearson_coeff)
 
 # Big correlation between Gold and Wine, watch and CPI, SP500+CPI and Art
 # Bond Yield has a negative correlation with all indexes, and is a bit biased, because I cannot log transform it since it has negative values
