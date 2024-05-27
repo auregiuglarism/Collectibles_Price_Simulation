@@ -434,5 +434,23 @@ arima_watch = (2,1,3)
 # Save optimal model
 # watch_model_exog = create_model(watch_adjusted, arima_watch, exog_watch, index='watch')
 
+# ART
+# arima_art = (13,1,6)
+# art_adjusted, exog_art = align_data(art_df.observed, cpi_df.observed) 
 
+# Evaluate the model
+# eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
+# eval_df = evaluate_model_with_Plots(art_adjusted, [arima_art], eval_df, exog_art, seasonal=False, index='art')
+# print(eval_df) # Best variable for ARIMAX art is CPI
+
+# Since SARIMA > ARIMA for Art, evaluate SARIMAX 
+# sarima_art = [(4,1,2),(5,0,6,6)]
+# art_adjusted, exog_art = align_data(art_df.observed, sp500_df.observed) # Align the data (same length, same dates
+# eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
+# eval_df = evaluate_model_with_Plots(art_adjusted, [sarima_art[1]], eval_df, exog_art, seasonal=True, index='art', arima_order=sarima_art[0])
+# print(eval_df) # Best variable for SARIMAX art is SP500
+
+# Save optimal model
+# art_model_exog = create_model(art_adjusted, arima_art, exog_art, index='art')
+# seasonal_art_model_exog = create_model(art_adjusted, sarima_art[0], exog_art, seasonal_order=sarima_art[1], index='art')
 
