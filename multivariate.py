@@ -21,7 +21,7 @@ from scipy.stats import ttest_ind
 # https://datagy.io/t-test-python/
 
 # TODO : Read paper : time series analysis to modeling to forecast 
-# TODO : Include an exogenous variable about the real estate market in the US and other exogenous twins about non-US markets for each exogenous variable that alread exists.
+# TODO : Include an exogenous variable about the real estate market in the US and other exogenous twins about non-US markets for each exogenous variable that already exists.
 # TODO : Do multivariate forecasting, and write down accuracy for each asset.
 
 ##### CORRELATION #####
@@ -224,16 +224,16 @@ def test_model(test, test_exog, model=None, seasonal=False, index='wine'): # Tes
     mape_baseline_mean = np.mean(np.abs((y_test - baseline_mean) / y_test)) * 100
 
     # Plot the results
-    # plt.plot(yhat_test, color="green", label="predicted") # Comment this when evaluating multiple models
-    # plt.plot(y_test, color="blue", label="observed") # Comment this when evaluating multiple models
-    # plt.plot(baseline, color="red", label="baseline") # Comment this when evaluating multiple models 
-    # plt.plot(baseline_mean, color="purple", label="mean") # Comment this when evaluating multiple models 
-    # plt.legend(loc='best') # Comment this when evaluating multiple models
-    # plt.title(f'Compare forecasted and observed {index} index values for test set') # Comment this when evaluating multiple models
-    # plt.xticks([0, len(y_test)/2, len(y_test)-1]) # Comment this when evaluating multiple models 
-    # plt.xlabel('Time') # Comment this when evaluating multiple models 
-    # plt.ylabel('Index value') # Comment this when evaluating multiple models
-    # plt.show() # Comment this when evaluating multiple models
+    plt.plot(yhat_test, color="green", label="predicted") # Comment this when evaluating multiple models
+    plt.plot(y_test, color="blue", label="observed") # Comment this when evaluating multiple models
+    plt.plot(baseline, color="red", label="baseline") # Comment this when evaluating multiple models 
+    plt.plot(baseline_mean, color="purple", label="mean") # Comment this when evaluating multiple models 
+    plt.legend(loc='best') # Comment this when evaluating multiple models
+    plt.title(f'Compare forecasted and observed {index} index values for test set') # Comment this when evaluating multiple models
+    plt.xticks([0, len(y_test)/2, len(y_test)-1]) # Comment this when evaluating multiple models 
+    plt.xlabel('Time') # Comment this when evaluating multiple models 
+    plt.ylabel('Index value') # Comment this when evaluating multiple models
+    plt.show() # Comment this when evaluating multiple models
 
     return yhat_test, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean, rmse, rmse_baseline, rmse_baseline_mean, mape, mape_baseline, mape_baseline_mean
 
@@ -429,9 +429,9 @@ watch_pearson_coeff = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yiel
 watch_pearson_coeff = compute_pearson_coeff(watch_pearson_coeff, np.log(watch_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
 art_pearson_coeff = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield"])
 art_pearson_coeff = compute_pearson_coeff(art_pearson_coeff, np.log(art_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
-# print(wine_pearson_coeff)
-# print(watch_pearson_coeff)
-# print(art_pearson_coeff)
+print(wine_pearson_coeff)
+print(watch_pearson_coeff)
+print(art_pearson_coeff)
 
 # Big correlation between Gold and Wine, watch and CPI, SP500+CPI and Art
 # Bond Yield has a negative correlation with all indexes, and is a bit biased, because I cannot log transform it since it has negative values
@@ -441,6 +441,9 @@ art_pearson_coeff = compute_pearson_coeff(art_pearson_coeff, np.log(art_df.obser
 # compute_t_test(np.log(art_df.observed), np.log(sp500_df.observed)) # Significant correlation
 # compute_t_test(np.log(wine_df.observed), np.log(cpi_df.observed)) # significant correlation
 # compute_t_test(np.log(watch_df.observed), np.log(cpi_df.observed)) # significant correlation
+
+# NB forecasting using exogenous variables requires future exog data to be known in advance which is not the case.
+# Thus I need to forecast the exogenous variables as well using ARIMA, and use that forecast as input for the main forecast of our index.
 
 # WINE
 arima_wine = (3,1,3)
@@ -467,6 +470,7 @@ long_term = wine_train.shape[0] # Full training set can go beyond that but it wo
 # Long term forecasts
 ref_start = wine_adjusted.index[-1] # "2022-07-31"
 end_long = "2035-02-28"
+# Not applicable yet
 # forecast_model(wine_adjusted, wine_test, wine_train_exog, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='wine')
 
 # WATCH
@@ -480,9 +484,9 @@ watch_train_exog = exog_watch[:int(0.8*len(exog_watch))]
 watch_test_exog = exog_watch[int(0.8*len(exog_watch)):]
 
 # Evaluate the model
-# eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
-# eval_df = evaluate_model_with_Plots(watch_adjusted, [arima_watch], eval_df, exog_watch, seasonal=False, index='watch')
-# print(eval_df)
+eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
+eval_df = evaluate_model_with_Plots(watch_adjusted, [arima_watch], eval_df, exog_watch, seasonal=False, index='watch')
+print(eval_df)
 
 # Save optimal model
 # watch_model_exog = create_model(watch_adjusted, arima_watch, exog_watch, index='watch')
@@ -494,11 +498,12 @@ long_term = watch_train.shape[0] # Full training set can go beyond that but it w
 # Long term forecasts
 ref_start = watch_adjusted.index[-1] # "2023-12-01"
 end_long = "2034-02-01"
+# Not applicable yet
 # forecast_model(watch_adjusted, watch_test, watch_train_exog, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='watch')
 
 # ART
 arima_art = (13,1,6)
-# art_adjusted, exog_art = align_data(art_df.observed, cpi_df.observed) 
+art_adjusted, exog_art = align_data(art_df.observed, cpi_df.observed) 
 
 # Evaluate the model
 # eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
@@ -507,16 +512,18 @@ arima_art = (13,1,6)
 
 # Since SARIMA > ARIMA for Art, evaluate SARIMAX 
 sarima_art = [(4,1,2),(5,0,6,6)]
-art_adjusted, exog_art = align_data(art_df.observed, sp500_df.observed)
+# art_adjusted, exog_art = align_data(art_df.observed, sp500_df.observed)
 # eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
 # eval_df = evaluate_model_with_Plots(art_adjusted, [sarima_art[1]], eval_df, exog_art, seasonal=True, index='art', arima_order=sarima_art[0])
 # print(eval_df) # Best variable for SARIMAX art is SP500
 
 art_train = art_adjusted[:int(0.8*len(art_adjusted))]
 art_test = art_adjusted[int(0.8*len(art_adjusted)):]
-                   
-art_train_exog = exog_art[:int(0.8*len(exog_art))]
-art_test_exog = exog_art[int(0.8*len(exog_art)):]
+               
+forecast_exog = exog_art[int(0.8*len(exog_art)):]
+exog_mean = forecast_exog.mean()
+fill = [exog_mean for i in range(len(art_train) - len(forecast_exog))]
+forecast_exog = pd.concat([forecast_exog, pd.Series(fill)])
 
 # Save optimal model
 # art_model_exog = create_model(art_adjusted, arima_art, exog_art, index='art')
@@ -525,8 +532,8 @@ art_test_exog = exog_art[int(0.8*len(exog_art)):]
 # Forecast
 # Now that the optimal has been found, use it to forecast
 long_term = art_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
-
 # Long term forecasts
 ref_start = art_adjusted.index[-1] # "2023-09-01"
 end_long = "2051-02-01"
-forecast_model(art_adjusted, art_test, art_train_exog, long_term, "Long", end_date=end_long, model=None, seasonal=True, index='art')
+# Not applicable yet
+# forecast_model(art_adjusted, art_test, forecast_exog, long_term, "Long", end_date=end_long, model=None, seasonal=True, index='art')
