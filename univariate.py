@@ -345,11 +345,12 @@ def forecast_decomp_recomb_strategy(data, resid_test_data, resid_prediction, sea
     # Forecast trend depending on chosen method:
     trend = trend_data[6:-6] 
     if method == 'mean':
-        trend_mean = np.mean(trend[len(trend) - len(resid_prediction):])
+        print(len(trend), len(resid_prediction))
+        trend_mean = np.mean(trend[int(0.8*len(trend)):]) # Mean of the last 20% of the data
         trend_prediction = np.full(len(resid_prediction), trend_mean)
     
     elif method == 'walk_forward':
-        start = len(trend) - len(resid_prediction)
+        start = int(0.8*len(trend)) # Start at the beginning of the test set for the walk forward strategy
         trend_prediction = [] 
         for i in range(0, len(resid_prediction)):
             tmp_values = trend[start:].values.tolist()
@@ -628,7 +629,7 @@ arima_resid_watch = (2,0,0)
 # ref_start = watch_residuals.index[-1] # 2023-06-01
 # end_long = "2033-02-01"
 # watch_resid_prediction = forecast_model(watch_residuals, watch_residuals_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='watch_residuals')
-# forecast_decomp_recomb_strategy(watch_df_decomp.observed, watch_residuals_test, watch_resid_prediction, watch_df_decomp.seasonal, watch_df_decomp.trend, end_long, method='walk_forward', index='watch', freq='MS')
+# forecast_decomp_recomb_strategy(watch_df_decomp.observed, watch_residuals_test, watch_resid_prediction, watch_df_decomp.seasonal, watch_df_decomp.trend, end_long, method='mean', index='watch', freq='MS')
 
 # ART
 # Initial Split into train and test (for after split cross validation)
@@ -657,11 +658,11 @@ arima_resid_art = (6,0,10)
 
 # Now that model is trained + evaluated, use it to forecast
 # Forecast residual
-# long_term = art_residuals_train.shape[0]
-# ref_start = art_residuals.index[-1] # 2023-03-01
-# end_long = "2049-12-01"
-# art_resid_prediction = forecast_model(art_residuals, art_residuals_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='art_residuals')
-# forecast_decomp_recomb_strategy(art_df_decomp.observed, art_residuals_test, art_resid_prediction, art_df_decomp.seasonal, art_df_decomp.trend, end_long, method='walk_forward', index='art', freq='MS')
+long_term = art_residuals_train.shape[0]
+ref_start = art_residuals.index[-1] # 2023-03-01
+end_long = "2049-12-01"
+art_resid_prediction = forecast_model(art_residuals, art_residuals_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='art_residuals')
+forecast_decomp_recomb_strategy(art_df_decomp.observed, art_residuals_test, art_resid_prediction, art_df_decomp.seasonal, art_df_decomp.trend, end_long, method='mean', index='art', freq='MS')
 
 ### STATIONARITY TESTS ###
 
