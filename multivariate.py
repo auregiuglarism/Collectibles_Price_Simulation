@@ -369,6 +369,38 @@ def align_data(index_df, exog):
 
     return index_df, exog
 
+def forecast_model(data, test, exog_data, forecast_steps, length, end_date, model=None, seasonal=False, index='wine'):
+    if model == None and seasonal == False: # ARIMAX Model
+        model = ARIMAResults.load(f'models\{index}_arimax.pkl')
+    elif model == None and seasonal == True: # SARIMAX Model
+        model = ARIMAResults.load(f'models\{index}_sarimax.pkl')
+
+    forecast = model.get_forecast(steps=forecast_steps, exog=exog_data)
+    forecast_ci = forecast.conf_int()
+    yhat = forecast.predicted_mean.values # Apply the exp transformation if you used log transform during fit before to invert scales back
+
+    if index=='wine' or index=='wine_residuals':
+        x_axis = pd.date_range(start=data.index[0], end=data.index[-1], freq = 'M')
+        x_axis_forecast = pd.date_range(start=test.index[0], end = end_date, freq = 'M')
+
+    elif index=='watch' or index=='watch_residuals':
+        x_axis = pd.date_range(start=data.index[0], end=data.index[-1], freq = 'MS')
+        x_axis_forecast = pd.date_range(start=test.index[0], end = end_date, freq = 'MS')
+
+    else: # index=='art' or index=='art_residuals'
+        x_axis = pd.date_range(start=data.index[0], end=data.index[-1], freq = 'MS')
+        x_axis_forecast = pd.date_range(start=test.index[0], end = end_date, freq = 'MS')
+
+    plt.plot(x_axis, data.values, color="blue", label="observed data")
+    plt.plot(x_axis_forecast, yhat, color="red", label="forecast", linestyle="--")
+    plt.legend(loc='best')
+    plt.title(f'{length} term forecast of {index} index values using exogenous variable')
+    plt.xlabel('Time')
+    plt.ylabel('Index value')
+    plt.show()
+
+    return yhat
+
 ##### MAIN #####
 
 ## Load the data from pre-processing ##
@@ -412,7 +444,13 @@ art_pearson_coeff = compute_pearson_coeff(art_pearson_coeff, np.log(art_df.obser
 
 # WINE
 arima_wine = (3,1,3)
-# wine_adjusted, exog_wine = align_data(wine_df.observed, gold_df.observed)
+wine_adjusted, exog_wine = align_data(wine_df.observed, gold_df.observed)
+
+wine_train = wine_adjusted[:int(0.8*len(wine_adjusted))]
+wine_test = wine_adjusted[int(0.8*len(wine_adjusted)):]
+
+wine_train_exog = exog_wine[:int(0.8*len(exog_wine))]
+wine_test_exog = exog_wine[int(0.8*len(exog_wine)):]
 
 # Evaluate the model
 # eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
@@ -422,9 +460,24 @@ arima_wine = (3,1,3)
 # Save optimal model
 # wine_model_exog = create_model(wine_adjusted, arima_wine, exog_wine, index='wine') 
 
+# Forecast
+# Now that the optimal has been found, use it to forecast
+long_term = wine_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
+
+# Long term forecasts
+ref_start = wine_adjusted.index[-1] # "2022-07-31"
+end_long = "2035-02-28"
+# forecast_model(wine_adjusted, wine_test, wine_train_exog, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='wine')
+
 # WATCH
 arima_watch = (2,1,3)
-# watch_adjusted, exog_watch = align_data(watch_df.observed, cpi_df.observed)
+watch_adjusted, exog_watch = align_data(watch_df.observed, cpi_df.observed)
+
+watch_train = watch_adjusted[:int(0.8*len(watch_adjusted))]
+watch_test = watch_adjusted[int(0.8*len(watch_adjusted)):]
+                   
+watch_train_exog = exog_watch[:int(0.8*len(exog_watch))]
+watch_test_exog = exog_watch[int(0.8*len(exog_watch)):]
 
 # Evaluate the model
 # eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
@@ -434,8 +487,17 @@ arima_watch = (2,1,3)
 # Save optimal model
 # watch_model_exog = create_model(watch_adjusted, arima_watch, exog_watch, index='watch')
 
+# Forecast
+# Now that the optimal has been found, use it to forecast
+long_term = watch_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
+
+# Long term forecasts
+ref_start = watch_adjusted.index[-1] # "2023-12-01"
+end_long = "2034-02-01"
+# forecast_model(watch_adjusted, watch_test, watch_train_exog, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='watch')
+
 # ART
-# arima_art = (13,1,6)
+arima_art = (13,1,6)
 # art_adjusted, exog_art = align_data(art_df.observed, cpi_df.observed) 
 
 # Evaluate the model
@@ -444,13 +506,27 @@ arima_watch = (2,1,3)
 # print(eval_df) # Best variable for ARIMAX art is CPI
 
 # Since SARIMA > ARIMA for Art, evaluate SARIMAX 
-# sarima_art = [(4,1,2),(5,0,6,6)]
-# art_adjusted, exog_art = align_data(art_df.observed, sp500_df.observed) # Align the data (same length, same dates
+sarima_art = [(4,1,2),(5,0,6,6)]
+art_adjusted, exog_art = align_data(art_df.observed, sp500_df.observed)
 # eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
 # eval_df = evaluate_model_with_Plots(art_adjusted, [sarima_art[1]], eval_df, exog_art, seasonal=True, index='art', arima_order=sarima_art[0])
 # print(eval_df) # Best variable for SARIMAX art is SP500
+
+art_train = art_adjusted[:int(0.8*len(art_adjusted))]
+art_test = art_adjusted[int(0.8*len(art_adjusted)):]
+                   
+art_train_exog = exog_art[:int(0.8*len(exog_art))]
+art_test_exog = exog_art[int(0.8*len(exog_art)):]
 
 # Save optimal model
 # art_model_exog = create_model(art_adjusted, arima_art, exog_art, index='art')
 # seasonal_art_model_exog = create_model(art_adjusted, sarima_art[0], exog_art, seasonal_order=sarima_art[1], index='art')
 
+# Forecast
+# Now that the optimal has been found, use it to forecast
+long_term = art_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
+
+# Long term forecasts
+ref_start = art_adjusted.index[-1] # "2023-09-01"
+end_long = "2051-02-01"
+forecast_model(art_adjusted, art_test, art_train_exog, long_term, "Long", end_date=end_long, model=None, seasonal=True, index='art')
