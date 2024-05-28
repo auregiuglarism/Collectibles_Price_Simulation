@@ -76,19 +76,17 @@ def test_model(test, model): # Testing data
 
     return yhat_test, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean, rmse, rmse_baseline, rmse_baseline_mean, mape, mape_baseline, mape_baseline_mean
 
-def rolling_window_forecast(data, train, test, model_order, window_size, forecast_length, end_date, index='wine'):
+def rolling_window_forecast(data, train, test, model_order, window_size, forecast_length, end_date, index='wine', seasonal_order=None):
     # NB: The window size should be an integer that divides the length of the data
     history = [x for x in train]
     forecast = []
 
     for i in range(int(forecast_length/window_size)):
 
-        model = create_model(history, model_order)
+        model,_ = create_model(history, model_order, seasonal_order) # Leave seasonal_order as None for ARIMA in rolling window function call
 
         output = model.get_forecast(steps=window_size)
-        output_forecast = output.predicted_mean.values
-
-        # output_forecast = pd.Series(output_forecast, index=range(len(train_data), len(train_data)+window_size))
+        output_forecast = output.predicted_mean
 
         # Update the training data
         forecast = np.append(forecast, output_forecast)
@@ -106,6 +104,9 @@ def rolling_window_forecast(data, train, test, model_order, window_size, forecas
         x_axis = pd.date_range(start=data.index[0], end=data.index[-1], freq = 'MS')
         x_axis_forecast = pd.date_range(start=test.index[0], end = end_date, freq = 'MS')
 
+    if len(x_axis_forecast) > len(forecast): # Window size sometimes does not exactly finish at the end of the data
+        x_axis_forecast = x_axis_forecast[:len(forecast)]
+
     plt.plot(x_axis, data.values, color="blue", label="observed data")
     plt.plot(x_axis_forecast, forecast, color="red", label="rolling-window forecast", linestyle="--")
     plt.legend(loc='best')
@@ -121,6 +122,8 @@ def rolling_window_forecast(data, train, test, model_order, window_size, forecas
 # Data is adjusted for inflation and decomposed into trend, seasonality and residuals
 wine_df_decomp, watch_df_decomp, art_df_decomp = preprocessing.main(univariate=True)
 
+### (S)ARIMA (p,d,q)*(P,D,Q)m Model Forecasting (Third Method) Rolling-Window ####
+
 # WINE
 wine_train = wine_df_decomp.observed[:int(0.8*len(wine_df_decomp.observed))]
 wine_test = wine_df_decomp.observed[int(0.8*len(wine_df_decomp.observed)):]
@@ -131,8 +134,35 @@ long_term = wine_train.shape[0] # Full training set can go beyond that but it wo
 ref_start = wine_df_decomp.observed.index[-1] # "2023-12-31"
 end_long = "2037-06-30"
 
-test_window = int(len(wine_train)/2)
-rolling_window_forecast(wine_df_decomp.observed, wine_train, wine_test, arima_wine, test_window, long_term, end_long, index='wine')
+window = 10
+# rolling_window_forecast(wine_df_decomp.observed, wine_train, wine_test, arima_wine, window, long_term, end_long, index='wine')
+
+# WATCH
+watch_train = watch_df_decomp.observed[:int(0.8*len(watch_df_decomp.observed))]
+watch_test = watch_df_decomp.observed[int(0.8*len(watch_df_decomp.observed)):]
+
+arima_watch = (2,1,3) # We already know from previous code that this is the optimal ARIMA
+
+long_term = watch_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
+ref_start = watch_df_decomp.observed.index[-1] # "2023-12-01"
+end_long = "2034-02-01"
+
+window = 1
+# rolling_window_forecast(watch_df_decomp.observed, watch_train, watch_test, arima_watch, window, long_term, end_long, index='watch')
+
+# ART
+art_train = art_df_decomp.observed[:int(0.8*len(art_df_decomp.observed))]
+art_test = art_df_decomp.observed[int(0.8*len(art_df_decomp.observed)):]
+
+arima_art = (13,1,6) # We already know from previous code that this is the optimal ARIMA
+sarima_art = [(4,1,2),(5,0,6,6)]
+
+long_term = art_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
+ref_start = art_df_decomp.observed.index[-1] # "2023-09-01"
+end_long = "2051-02-01"
+
+window = 20
+rolling_window_forecast(art_df_decomp.observed, art_train, art_test, arima_art, window, long_term, end_long, index='art', seasonal_order=None)
 
 
 

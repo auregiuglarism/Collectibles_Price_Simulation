@@ -350,7 +350,7 @@ art_df_diff = art_df_decomp.observed.diff().dropna()
 # Smoothing the data with a 30 day moving average messes (for some reason) the stationarity of the data.
 # Increasing the window size makes it worse.
 
-### (S)ARIMA (p,d,q)*(P,D,Q)m Model Forecasting (First Method) ###
+### (S)ARIMA (p,d,q)*(P,D,Q)m Model Forecasting (First Method) Traditional Forecasting ###
 
 # First order differencing makes the data stationary so I will set my d = 1 as confirmed by ADF + KPSS tests
 
