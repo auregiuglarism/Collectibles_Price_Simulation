@@ -12,7 +12,6 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 import statsmodels.api as sm
 
-# TODO: Implement rolling-window forecasting approach to train the model and forecast data
 # TODO: Report : Include a more detailed explanation (since you are the first one) of the indices used in this thesis (art, watch and wine) + sources
 # TODO: Report : Include a future work section of what could be done from here on out after my work for future researchers
 
@@ -36,7 +35,12 @@ import statsmodels.api as sm
 # https://www.sciencedirect.com/science/article/pii/S0925231219309178
 # https://stats.stackexchange.com/questions/124955/is-it-unusual-for-the-mean-to-outperform-arima/125016#125016
 
-##### PREPROCESSING #####
+
+# https://pdf.sciencedirectassets.com/271689/1-s2.0-S0304407616X00097/1-s2.0-S0304407616301713/main.pdf?X-Amz-Security-Token=IQoJb3JpZ2luX2VjEGEaCXVzLWVhc3QtMSJGMEQCIBGKZ%2BIrCxk2a71fYwONLJuBuxZpZtfv24kUuTvEb29PAiBb3iegDxBGuh8X4ehfJt9anx%2FUEtcdl%2FNaH4uwcouNzSq8BQjZ%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAUaDDA1OTAwMzU0Njg2NSIMzU09aK%2B0FVQpoXWbKpAFCeXs0jdJrJqxc6b7jeNX425Pn%2B64F2xaebXs9Rps%2FuDsumh61e%2BcbfIMrlELbWV%2FFBU3SkZVwT%2BRDSeRE4lQtHXHOZangJWjGwg1rOftvFMjgpKfOYhXZv7VFlw%2BcoWK0m%2BMlbePiO7UIifiPFaamT0d%2Fk2BNSa6bjrRq0Nvx6mFOL%2ByXiJpc5b0AFPCHuvGBJlrfIiT2f4qLgisIXAdW7n0J%2BFLyV7I38A%2BYbW2Ngq5H5nXNoSkyWLe7u8BLfMIOxmknPgL1yS%2BzQX%2FZMVoUuuSCQwOOJLV9NT6CbMaROnyg4rotDrQoWVf0W2cc%2FAMZvbEi0VEi0HiY2YjT3rRb%2F1nrurgAybRlXpw4mDgnhQn7X2udFeD35gcYXx8xGbBPCudYMGrSproLyH%2BjzSoJwZiGk%2B3VCx7GIc8rD0oZ6FLnS9mvm9WBSIDujfJaeekV4y7rJJDimz3xBB4g6CMTw%2FhkeZWDPl9%2FDJ1C9BvudrnWuuKV%2BI9TdHBVTl0jQ24b9zYdPtw77bF0EbKufqxZb89DVxAUlm7rrhg8tu%2BYRGmz0quVjZ1vWgJIgN50RWG6G77F68fOJHRfY5O5upn6VYhLizeyU%2FnbOF1DIPUu5PMxPhDPFD6L6Gj20y9sjFagrJAdj2hSXjHUdHuDPZJciXJ0s91dtd0mWeYVaaB%2FdHvRi1VM5Nw26vCrpEfTxZV%2BiBhcXGpS2A6vwWwDnvWNBkwixlRqu%2FhlEjN3AJoZ%2BgNKtEdUijYoIBUZMyoW5HooBWDctKF7yMq9BjndT%2Br9Q8jqS0Rltx7Dcr%2BD4%2BJvzpkhsgNvEht9m40N7Ui0jmfSTsB6qMq%2FzqoTyP8kHVVmUfJqxVstx%2F7me2eK35GWWUw%2FuPSsgY6sgFMH0RS5c5DfWtaDLYCPRFJ2HnYjUCGohdpMGKjqHGavXjWbMWJ9jTOwsIwWMuqYNFxSENfu9IvcayXs50iFZkip36UbyuOCuiecojmeVto%2FFV%2FD9eINpC5x3VL0hZdaNftEoixpAckcI3f9ClqQpVlKp7lUnNeojR%2FhFrcZNNPd4UDB8eYxr6ybgomQZRbFOIqIkxaC9EWQtmm5JPHncMvDbXJN2x91jTKUO6oKvPHjQPW&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240527T170829Z&X-Amz-SignedHeaders=host&X-Amz-Expires=300&X-Amz-Credential=ASIAQ3PHCVTYXNRMRAGR%2F20240527%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=5d1945dc2162a6a63dfd7fe1b86be1e1caca26b5217700889024b309bf81676a&hash=2afe5ca0247f8853be7fd4f9a7bfc146f4e634e2ea96fa779afa38a5770a7611&host=68042c943591013ac2b2430a89b270f6af2c76d8dfd086a07176afe7c76c2c61&pii=S0304407616301713&tid=spdf-034c920f-5125-43b5-84c0-83f620cc22eb&sid=87600c4d5d9e354ccd9b4a35cecdd1abe9a8gxrqb&type=client&tsoh=d3d3LnNjaWVuY2VkaXJlY3QuY29t&ua=140a5c5f02585b00525558&rr=88a79b747c909fe2&cc=nl
+# https://www.bing.com/search?pglt=41&q=olling-window+forecasting+approach+when+using+ARIMA&cvid=c360b87664694dfeb3f892b2d89e6f31&gs_lcrp=EgZjaHJvbWUyBggAEEUYOdIBCDE5NTlqMGoxqAIAsAIA&FORM=ANNTA1&adppc=EDGEXST&PC=ASTS
+
+
+##### STATISTICAL TESTS #####
 
 def moving_average_smooth(df, window_size):
     moving_avg = df.rolling(window=window_size).mean()
@@ -328,51 +332,6 @@ def generate_arima_candidates(p, d, q, seasonal=False, m=0):
             candidates.append((p_val, d_val, q_val))
   return candidates
 
-def forecast_decomp_recomb_strategy(data, resid_test_data, resid_prediction, seasonal_data, trend_data, end_date, method='mean', index='wine', freq='M'):
-    # Forecast seasonality with period
-    seasonal = seasonal_data[6:-6] # Period of 12
-    seasonal = seasonal[:12]
-    seasonal_prediction = []
-    counter = 0
-    for i in range(0, len(resid_prediction)):
-        seasonal_prediction.append(seasonal[counter])
-        if counter == (len(seasonal)-1):
-            counter = 0
-        else:
-            counter += 1
-
-    # Forecast trend depending on chosen method:
-    trend = trend_data[6:-6] 
-    if method == 'mean':
-        print(len(trend), len(resid_prediction))
-        trend_mean = np.mean(trend[int(0.8*len(trend)):]) # Mean of the last 20% of the data
-        trend_prediction = np.full(len(resid_prediction), trend_mean)
-    
-    elif method == 'walk_forward':
-        start = int(0.8*len(trend)) # Start at the beginning of the test set for the walk forward strategy
-        trend_prediction = [] 
-        for i in range(0, len(resid_prediction)):
-            tmp_values = trend[start:].values.tolist()
-            if trend_prediction != []:
-                tmp_values.extend(trend_prediction)
-
-            trend_prediction.append(np.mean(tmp_values))
-            start+=1
-
-
-    # Forecast the index by building up the original scale again for each data point
-    forecast = resid_prediction + seasonal_prediction + trend_prediction
-
-    x_axis = pd.date_range(start=data.index[0], end=data.index[-1], freq = freq)
-    x_axis_forecast = pd.date_range(start=resid_test_data.index[0], end = end_date, freq = freq)
-    plt.plot(x_axis, data.values, color="blue", label="observed data")
-    plt.plot(x_axis_forecast, forecast, color="red", label="forecast", linestyle="--")
-    plt.legend(loc='best')
-    plt.title(f'Long term forecast of {index} index values using ARIMA decomposition-forecasting-recombination strategy')
-    plt.xlabel('Time')
-    plt.ylabel('Index value')
-    plt.show()
-
 ##### MAIN #####
 
 ## Load the data from global pre-processing.py ##
@@ -562,106 +521,7 @@ ref_start = art_df_decomp.observed.index[-1] # "2023-09-01"
 end_short = "2024-09-01"
 end_medium = "2028-09-01"
 end_long = "2051-02-01"
-# forecast_model(art_df_decomp.observed, art_test, long_term, "Long", end_date=end_long, model=None, seasonal=True, index='art')
-
-### (S)ARIMA (p,d,q)*(P,D,Q)m Model Forecasting (Second Method) Decomposition-forecasting-recombination strategy ####
-
-# WINE
-# Initial Split into train and test (for after split cross validation)
-wine_residuals = wine_df_decomp.resid.dropna() # Remove 6 NaN values at the start + end
-wine_residuals_train = wine_residuals[:int(0.8*len(wine_residuals))]
-wine_residuals_test = wine_residuals[int(0.8*len(wine_residuals)):]
-
-# Are the wine residuals stationary ? Yes so set d=0 in ARIMA model
-
-# Determine good ARIMA Model candidates using the ACF and PACF Plots and choose the best one
-# p, d, q = [0,1,2,3,4,23,24], [0], [0,1,2,5,6,7,12,17,18]
-# candidates = generate_arima_candidates(p, d, q)
-# eval_df = evaluate_model_with_Plots(wine_residuals, candidates, eval_df, index='wine')
-# print("Head")
-# print(eval_df.head(35))
-# print("Tail")
-# print(eval_df.tail(35))
-
-# Evaluate Wine Residual ARIMA model with Box-Jenkins model diagnostic
-arima_resid_wine = (4,0,1) # (3,0,12) or (4,0,1) from the candidates
-# check_model_with_BoxJenkins(wine_residuals, arima_resid_wine, seasonal_start_cd=None, index='wine')
-# (4,0,1) has white noise residuals
-# (3,0,12) has white noise residuals
-
-# Save optimal model
-# wine_model_resid = create_model(wine_residuals_train, arima_resid_wine, seasonal_order=None, index='wine_residuals') # Only run once to save the optimal model
-
-# Now that model is trained + evaluated, use it to forecast
-# Forecast residual
-# long_term = wine_residuals_train.shape[0]
-# ref_start = wine_residuals.index[-1] # 2023-06-30
-# end_long = "2036-04-30"
-# wine_resid_prediction = forecast_model(wine_residuals, wine_residuals_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='wine_residuals')
-# forecast_decomp_recomb_strategy(wine_df_decomp.observed, wine_residuals_test, wine_resid_prediction, wine_df_decomp.seasonal, wine_df_decomp.trend, end_long, method='walk_forward', index='wine', freq='M')
-
-# WATCH
-# Initial Split into train and test (for after split cross validation)
-watch_residuals = watch_df_decomp.resid.dropna() # Remove 6 NaN values at the start + end
-watch_residuals_train = watch_residuals[:int(0.8*len(watch_residuals))]
-watch_residuals_test = watch_residuals[int(0.8*len(watch_residuals)):]
-
-# Are the watch residuals stationary ? Yes so set d=0 in ARIMA model
-
-# Determine good ARIMA Model candidates using the ACF and PACF Plots and choose the best one
-# p, d, q = [0,1,2,14,26], [0], [0,1,4]
-# candidates = generate_arima_candidates(p, d, q)
-# eval_df = evaluate_model_with_Plots(watch_residuals, candidates, eval_df, index='watch')
-# print(eval_df)
-
-# Evaluate Watch Residual ARIMA model with Box-Jenkins model diagnostic
-arima_resid_watch = (2,0,0) 
-# check_model_with_BoxJenkins(watch_residuals, arima_resid_watch, seasonal_start_cd=None, index='watch')
-# Residuals are white noise
-
-# Save optimal model
-# watch_model_resid = create_model(watch_residuals_train, arima_resid_watch, seasonal_order=None, index='watch_residuals') # Only run once to save the optimal model
-
-# Now that model is trained + evaluated, use it to forecast
-# Forecast residual
-# long_term = watch_residuals_train.shape[0]
-# ref_start = watch_residuals.index[-1] # 2023-06-01
-# end_long = "2033-02-01"
-# watch_resid_prediction = forecast_model(watch_residuals, watch_residuals_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='watch_residuals')
-# forecast_decomp_recomb_strategy(watch_df_decomp.observed, watch_residuals_test, watch_resid_prediction, watch_df_decomp.seasonal, watch_df_decomp.trend, end_long, method='mean', index='watch', freq='MS')
-
-# ART
-# Initial Split into train and test (for after split cross validation)
-art_residuals = art_df_decomp.resid.dropna() # Remove 6 NaN values at the start + end
-art_residuals_train = art_residuals[:int(0.8*len(art_residuals))]
-art_residuals_test = art_residuals[int(0.8*len(art_residuals)):]
-
-# Are the art residuals stationary ? Yes so set d=0 in ARIMA model
-
-# Determine good ARIMA Model candidates using the ACF and PACF Plots and choose the best one
-# p, d, q = [0,1,2,4,6,7,18,19,31], [0], [0,1,2,3,4,6,10,12,42]
-# candidates = generate_arima_candidates(p, d, q)
-# eval_df = evaluate_model_with_Plots(art_residuals, candidates, eval_df, index='art')
-# print("Head")
-# print(eval_df.head(40))
-# print("Tail")
-# print(eval_df.tail(41))
-
-# Evaluate Art Residual ARIMA model with Box-Jenkins model diagnostic
-arima_resid_art = (6,0,10) 
-# check_model_with_BoxJenkins(art_residuals, arima_resid_art, seasonal_start_cd=None, index='art')
-# Residuals are white noise
-
-# Save optimal model
-# art_model_resid = create_model(art_residuals_train, arima_resid_art, seasonal_order=None, index='art_residuals') # Only run once to save the optimal model
-
-# Now that model is trained + evaluated, use it to forecast
-# Forecast residual
-long_term = art_residuals_train.shape[0]
-ref_start = art_residuals.index[-1] # 2023-03-01
-end_long = "2049-12-01"
-art_resid_prediction = forecast_model(art_residuals, art_residuals_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='art_residuals')
-forecast_decomp_recomb_strategy(art_df_decomp.observed, art_residuals_test, art_resid_prediction, art_df_decomp.seasonal, art_df_decomp.trend, end_long, method='mean', index='art', freq='MS')
+# forecast_model(art_df_decomp.observed, art_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='art')
 
 ### STATIONARITY TESTS ###
 
