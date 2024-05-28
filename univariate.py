@@ -270,8 +270,6 @@ def forecast_model(data, test, forecast_steps, length, end_date, model=None, sea
     return yhat
 
 def split_cross_validation(data, order, index='wine', seasonal_order=None, seasonal=False):
-    # Not using blocked cross-validation because there is not enough data for sufficient blocks
-    # Using split cross validation instead with an 80/20 ratio at each split
     mae_l = []
     mse_l = []
     rmse_l = []
@@ -289,7 +287,7 @@ def split_cross_validation(data, order, index='wine', seasonal_order=None, seaso
     rmse_l_mean = []
     mape_l_mean = []
     
-    splits = [0.5, 0.65, 0.85, 1.0]
+    splits = [0.5, 0.65, 0.85, 1.0] # split cross validation with an 80/20 ratio at each split
     for split in splits:
         split_data = data[:int(split*len(data))]
         train = split_data[:int(0.8*len(split_data))]

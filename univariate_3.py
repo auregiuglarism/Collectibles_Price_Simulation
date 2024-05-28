@@ -12,7 +12,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 import statsmodels.api as sm
 
-# TODO: Implement rolling-window forecasting approach to train the model and forecast data
+# TODO: Implement the rolling window validation method for the optimal (S)ARIMA model for each index
 
 def create_model(train, order, seasonal_order=None):
     if seasonal_order == None: # ARIMA Model
@@ -162,7 +162,7 @@ ref_start = art_df_decomp.observed.index[-1] # "2023-09-01"
 end_long = "2051-02-01"
 
 window = 20
-rolling_window_forecast(art_df_decomp.observed, art_train, art_test, arima_art, window, long_term, end_long, index='art', seasonal_order=None)
+# rolling_window_forecast(art_df_decomp.observed, art_train, art_test, arima_art, window, long_term, end_long, index='art', seasonal_order=None)
 
 
 
