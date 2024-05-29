@@ -42,7 +42,7 @@ def test_model(test, model): # Testing data
     forecast_steps = test.shape[0]
     forecast = model.get_forecast(steps=forecast_steps)
     forecast_ci = forecast.conf_int()
-    yhat_test = forecast.predicted_mean.values # Apply the exp transformation if you used log transform before to invert scales back
+    yhat_test = forecast.predicted_mean # Apply the exp transformation if you used log transform before to invert scales back
 
     y_test = test
     baseline = np.full(len(y_test), y_test[0])
@@ -77,7 +77,6 @@ def test_model(test, model): # Testing data
     return yhat_test, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean, rmse, rmse_baseline, rmse_baseline_mean, mape, mape_baseline, mape_baseline_mean
 
 def rolling_window_forecast(data, train, test, model_order, window_size, forecast_length, end_date, index='wine', seasonal_order=None):
-    # NB: The window size should be an integer that divides the length of the data
     history = [x for x in train]
     forecast = []
 
@@ -115,6 +114,84 @@ def rolling_window_forecast(data, train, test, model_order, window_size, forecas
     plt.ylabel('Index value')
     plt.show()
 
+def rolling_window_validation(data, model_order, window_size, eval_df, seasonal_order=None):
+    # NB: Make sure that window_size is an integer
+    mae_l = []
+    mse_l = []
+    rmse_l = []
+    mape_l = []
+    aic_l = []
+    bic_l = []
+
+    mae_l_bas = []
+    mse_l_bas = []
+    rmse_l_bas = []
+    mape_l_bas = []
+
+    mae_l_mean = []
+    mse_l_mean = []
+    rmse_l_mean = []
+    mape_l_mean = []
+
+    start_train = data[:window_size]
+    history = [x for x in start_train]
+    test = data[len(history):(len(history)+window_size)]
+
+    end = False
+
+    for i in range(int(len(data)/window_size)):
+        model,_ = create_model(history, model_order, seasonal_order) # Leave seasonal_order as None for ARIMA in rolling window function call
+
+        if end == True:
+            break
+
+        _, mae, mse, mae_baseline, mse_baseline, mae_baseline_mean, mse_baseline_mean, rmse, rmse_baseline, rmse_baseline_mean, mape, mape_baseline, mape_baseline_mean = test_model(test, model)
+
+        # Model Evaluation Metrics
+        mae_l.append(mae)
+        mse_l.append(mse)
+        rmse_l.append(rmse)
+        mape_l.append(mape)
+        aic_l.append(model.aic)
+        bic_l.append(model.bic)
+
+        # Baseline Evaluation Metrics
+        mae_l_bas.append(mae_baseline)
+        mse_l_bas.append(mse_baseline)
+        rmse_l_bas.append(rmse_baseline)
+        mape_l_bas.append(mape_baseline)
+
+        # Mean Evaluation Metrics
+        mae_l_mean.append(mae_baseline_mean)
+        mse_l_mean.append(mse_baseline_mean)
+        rmse_l_mean.append(rmse_baseline_mean)
+        mape_l_mean.append(mape_baseline_mean)
+
+        history = np.append(history, test)
+
+        if (len(history) + window_size) > len(data) and len(history) < len(data):
+            test = data[len(history):len(data)]
+            end = True
+
+        elif len(history) >= len(data):
+            end = True
+
+        else:
+            test = data[len(history):(len(history)+window_size)]
+
+    eval_df.loc[len(eval_df)] = [model_order, None, np.mean(aic_l), np.mean(bic_l), np.mean(mae_l), np.mean(mse_l), np.mean(rmse_l), np.mean(mape_l)]
+
+    print("MAE Baseline:", np.mean(mae_l_bas))
+    print("MSE Baseline:", np.mean(mse_l_bas))
+    print("RMSE Baseline:", np.mean(rmse_l_bas))
+    print("MAPE % Baseline:", np.mean(mape_l_bas))
+    print("MAE Mean:", np.mean(mae_l_mean))
+    print("MSE Mean:", np.mean(mse_l_mean))
+    print("RMSE Mean:", np.mean(rmse_l_mean))
+    print("MAPE % Mean:", np.mean(mape_l_mean))
+
+    return eval_df
+        
 ##### MAIN #####
 
 ## Load the data from global pre-processing.py ##
@@ -130,6 +207,10 @@ wine_test = wine_df_decomp.observed[int(0.8*len(wine_df_decomp.observed)):]
 
 arima_wine = (3,1,3) # We already know from previous code that this is the optimal ARIMA
 
+# eval_df = pd.DataFrame(columns=['ARIMA', 'Seasonal Order', 'AIC', 'BIC', 'MAE', 'MSE', 'RMSE', 'MAPE %'])
+# eval_df = rolling_window_validation(wine_df_decomp.observed, arima_wine, 10, eval_df)
+# print(eval_df)
+
 long_term = wine_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
 ref_start = wine_df_decomp.observed.index[-1] # "2023-12-31"
 end_long = "2037-06-30"
@@ -143,11 +224,15 @@ watch_test = watch_df_decomp.observed[int(0.8*len(watch_df_decomp.observed)):]
 
 arima_watch = (2,1,3) # We already know from previous code that this is the optimal ARIMA
 
+# eval_df = pd.DataFrame(columns=['ARIMA', 'Seasonal Order', 'AIC', 'BIC', 'MAE', 'MSE', 'RMSE', 'MAPE %'])
+# eval_df = rolling_window_validation(watch_df_decomp.observed, arima_watch, 10, eval_df)
+# print(eval_df)
+
 long_term = watch_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
 ref_start = watch_df_decomp.observed.index[-1] # "2023-12-01"
 end_long = "2034-02-01"
 
-window = 1
+window = 10
 # rolling_window_forecast(watch_df_decomp.observed, watch_train, watch_test, arima_watch, window, long_term, end_long, index='watch')
 
 # ART
@@ -157,12 +242,16 @@ art_test = art_df_decomp.observed[int(0.8*len(art_df_decomp.observed)):]
 arima_art = (13,1,6) # We already know from previous code that this is the optimal ARIMA
 sarima_art = [(4,1,2),(5,0,6,6)]
 
+# eval_df = pd.DataFrame(columns=['ARIMA', 'Seasonal Order', 'AIC', 'BIC', 'MAE', 'MSE', 'RMSE', 'MAPE %'])
+# eval_df = rolling_window_validation(art_df_decomp.observed, sarima_art[0], 10, eval_df, seasonal_order=sarima_art[1])
+# print(eval_df)
+
 long_term = art_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
 ref_start = art_df_decomp.observed.index[-1] # "2023-09-01"
 end_long = "2051-02-01"
 
 window = 20
-# rolling_window_forecast(art_df_decomp.observed, art_train, art_test, arima_art, window, long_term, end_long, index='art', seasonal_order=None)
+# rolling_window_forecast(art_df_decomp.observed, art_train, art_test, sarima_art[0], window, long_term, end_long, index='art', seasonal_order=sarima_art[1])
 
 
 
