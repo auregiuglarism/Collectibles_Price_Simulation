@@ -22,7 +22,7 @@ from scipy.stats import ttest_ind
 
 # TODO : Read paper : time series analysis to modeling to forecast 
 # TODO : Include an exogenous variable about the real estate market in the US and other exogenous twins about non-US markets for each exogenous variable that already exists.
-# TODO : Do multivariate forecasting, and write down accuracy for each asset.
+# TODO : Write down accuracy for each asset class
 
 ##### CORRELATION #####
 
@@ -484,9 +484,9 @@ watch_train_exog = exog_watch[:int(0.8*len(exog_watch))]
 watch_test_exog = exog_watch[int(0.8*len(exog_watch)):]
 
 # Evaluate the model
-eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
-eval_df = evaluate_model_with_Plots(watch_adjusted, [arima_watch], eval_df, exog_watch, seasonal=False, index='watch')
-print(eval_df)
+# eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
+# eval_df = evaluate_model_with_Plots(watch_adjusted, [arima_watch], eval_df, exog_watch, seasonal=False, index='watch')
+# print(eval_df)
 
 # Save optimal model
 # watch_model_exog = create_model(watch_adjusted, arima_watch, exog_watch, index='watch')
