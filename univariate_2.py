@@ -304,7 +304,7 @@ def forecast_decomp_recomb_strategy(data, resid_test_data, resid_prediction, sea
         trend_mean = np.mean(trend[int(0.8*len(trend)):]) # Mean of the last 20% of the data
         trend_prediction = np.full(len(resid_prediction), trend_mean)
     
-    elif method == 'walk_forward':
+    elif method == 'rolling_window':
         start = int(0.8*len(trend)) # Start at the beginning of the test set for the walk forward strategy
         trend_prediction = [] 
         for i in range(0, len(resid_prediction)):
@@ -434,4 +434,4 @@ arima_resid_art = (6,0,10)
 # ref_start = art_residuals.index[-1] # 2023-03-01
 # end_long = "2049-12-01"
 # art_resid_prediction = forecast_model(art_residuals, art_residuals_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='art_residuals')
-# forecast_decomp_recomb_strategy(art_df_decomp.observed, art_residuals_test, art_resid_prediction, art_df_decomp.seasonal, art_df_decomp.trend, end_long, method='walk_forward', index='art', freq='MS')
+# forecast_decomp_recomb_strategy(art_df_decomp.observed, art_residuals_test, art_resid_prediction, art_df_decomp.seasonal, art_df_decomp.trend, end_long, method='rolling_window', index='art', freq='MS')

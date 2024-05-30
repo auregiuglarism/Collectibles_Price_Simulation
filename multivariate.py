@@ -401,6 +401,34 @@ def forecast_model(data, test, exog_data, forecast_steps, length, end_date, mode
 
     return yhat
 
+def forecast_exog(train_data, test_data, forecast_length, method="rolling_window", window_size=1):
+    # Window size must be > 1.
+    forecast = [x for x in test_data]
+    history = [x for x in train_data]
+    history = np.append(history,forecast)
+
+    if method == "rolling_window": # Rolling_window mean method
+
+        for i in range(forecast_length):
+
+            rolling_window = history[len(history) - window_size:len(history)]
+            mu = np.mean(rolling_window)
+
+            # Update the training data
+            forecast = np.append(forecast, mu)
+            history = np.append(history, forecast)
+
+    elif method == "mean":
+
+        window_mean = history[len(history) - window_size:len(history)]
+        forecast_mean = np.full((forecast_length-len(test_data)), np.mean(window_mean))
+        forecast = np.append(forecast, forecast_mean)
+
+    if len(forecast) > forecast_length:
+        forecast = forecast[:forecast_length]
+
+    return forecast
+
 ##### MAIN #####
 
 ## Load the data from pre-processing ##
@@ -470,8 +498,10 @@ long_term = wine_train.shape[0] # Full training set can go beyond that but it wo
 # Long term forecasts
 ref_start = wine_adjusted.index[-1] # "2022-07-31"
 end_long = "2035-02-28"
-# Not applicable yet
-# forecast_model(wine_adjusted, wine_test, wine_train_exog, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='wine')
+
+# Exog needs to be forecasted to obtain the forecasted values for index, you cannot take past exog values for forecast you need current values
+# future_exog = forecast_exog(wine_train_exog, wine_test_exog, long_term, method="rolling_window", window_size=5)
+# forecast_model(wine_adjusted, wine_test, future_exog, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='wine')
 
 # WATCH
 arima_watch = (2,1,3)
@@ -498,8 +528,10 @@ long_term = watch_train.shape[0] # Full training set can go beyond that but it w
 # Long term forecasts
 ref_start = watch_adjusted.index[-1] # "2023-12-01"
 end_long = "2034-02-01"
-# Not applicable yet
-# forecast_model(watch_adjusted, watch_test, watch_train_exog, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='watch')
+
+# Exog needs to be forecasted to obtain the forecasted values for index, you cannot take past exog values for forecast you need current values
+# future_exog = forecast_exog(watch_train_exog, watch_test_exog, long_term, method="rolling_window", window_size=5)
+# forecast_model(watch_adjusted, watch_test, future_exog, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='watch')
 
 # ART
 arima_art = (13,1,6)
@@ -519,11 +551,9 @@ sarima_art = [(4,1,2),(5,0,6,6)]
 
 art_train = art_adjusted[:int(0.8*len(art_adjusted))]
 art_test = art_adjusted[int(0.8*len(art_adjusted)):]
-               
-forecast_exog = exog_art[int(0.8*len(exog_art)):]
-exog_mean = forecast_exog.mean()
-fill = [exog_mean for i in range(len(art_train) - len(forecast_exog))]
-forecast_exog = pd.concat([forecast_exog, pd.Series(fill)])
+
+art_train_exog = exog_art[:int(0.8*len(exog_art))]
+art_test_exog = exog_art[int(0.8*len(exog_art)):]
 
 # Save optimal model
 # art_model_exog = create_model(art_adjusted, arima_art, exog_art, index='art')
@@ -535,5 +565,7 @@ long_term = art_train.shape[0] # Full training set can go beyond that but it wou
 # Long term forecasts
 ref_start = art_adjusted.index[-1] # "2023-09-01"
 end_long = "2051-02-01"
-# Not applicable yet
-# forecast_model(art_adjusted, art_test, forecast_exog, long_term, "Long", end_date=end_long, model=None, seasonal=True, index='art')
+
+# Exog needs to be forecasted to obtain the forecasted values for index, you cannot take past exog values for forecast you need current values
+# future_exog = forecast_exog(art_train_exog, art_test_exog, long_term, method="rolling_window", window_size=5)
+# forecast_model(art_adjusted, art_test, future_exog, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='art')
