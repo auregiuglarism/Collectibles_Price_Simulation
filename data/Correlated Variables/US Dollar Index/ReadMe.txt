@@ -1,0 +1,1 @@
+The US Dollar Index is not adjusted for inflation and needs averaging to reflect monthly prices.

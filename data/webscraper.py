@@ -2,7 +2,7 @@ import requests as r
 from pandas.io.json import * # json_normalize
 import json
 # from ph2 import ParseHub
-# from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup
 
 ### An easy method to retrieve data from live charts ###
 # https://medium.com/analytics-vidhya/an-easy-technique-for-web-scraping-an-interactive-web-chart-38f5f945ca63
@@ -132,14 +132,53 @@ def getRareWhisky_values():
 
     return index_values
 
+def get_USDX_values():
+    url8 = 'https://datawrapper.dwcdn.net/GFj2G/1/dataset.csv'
 
-   
+    filename = 'USDX_values.csv'
+
+    try:
+        res = r.get(url8, stream=True)
+        res.raise_for_status()
+
+        with open(filename, 'wb') as f:
+            for chunk in res.iter_content(1024): # Byte size
+                f.write(chunk)
+        
+        print(f"CSV file successfully downloaded as {filename}")
+    except res.exceptions.RequestException as e:
+        print(f"Error downloading CSV file: {e}")
+
+def get_US_retail_sales():
+    url9 = 'https://d3ii0wo49og5mi.cloudfront.net/economics/rstamom?&span=max&v=20240515151100&key=20240229:nazare'
+
+    res = r.get(url9)
+
+    search_cookies = res.cookies
+
+    get_data = {'method': 'GET', 'span': 'max', 'v': '20240515151100', 'key': '20240229:nazare'}
+
+    header = {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'}
+
+    res_get = r.post(url9, data=get_data, cookies=search_cookies, headers=header)
+
+    index_values = res_get.json()
+
+    return index_values
+
 ### Execution ###
 if __name__ == "__main__":
 
+    # Get US Retail Sales data (Not working)
+    US_retail_sales = get_US_retail_sales()
+    # print(US_retail_sales)
+
+    # Get USDX values data
+    # USDX_values = get_USDX_values()
+
     # Save RareWhisky values data
-    RareWhisky_values = getRareWhisky_values()
-    print(RareWhisky_values)
+    # RareWhisky_values = getRareWhisky_values()
+    # print(RareWhisky_values)
 
     # Save Chronopulse values data
     # Chronopulse_values = getChronopulse_values()

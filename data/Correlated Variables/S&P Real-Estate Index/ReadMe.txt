@@ -1,0 +1,1 @@
+The S&P Real estate index is not log-transformed but already ajusted for inflation.
