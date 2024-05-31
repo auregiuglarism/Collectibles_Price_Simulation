@@ -70,6 +70,15 @@ def compute_covariance(cov_df, index_df, variables):
                     index_df_cov = index_df_cov[:-1]
                 cov = np.cov(index_df_cov, variable)[0][1]
 
+            elif int(year_df_end) < int(year_var_end): # If the variable after the index
+                last_row = index_df.loc[year_df_end+"-"+month_df_end:].index[0]
+                variable = variable.loc[year_var_first+"-"+month_var_first:last_row]
+
+                last_row = index_df.loc[year_df_end+"-"+month_df_end:].index[0]
+                index_df_cov = index_df.loc[year_var_first+"-"+month_var_first:last_row]
+
+                cov = np.cov(index_df_cov, variable)[0][1]
+
             else: # If the variable ends before the index
                 last_row = index_df.loc[year_var_end+"-"+month_var_end:].index[0]
                 index_df_cov = index_df.loc[year_var_first+"-"+month_var_first:last_row]
@@ -77,7 +86,7 @@ def compute_covariance(cov_df, index_df, variables):
 
         covariances.append(cov)
 
-    cov_df.loc[len(cov_df)] = [covariances[0], covariances[1], covariances[2], covariances[3]]
+    cov_df.loc[len(cov_df)] = [covariances[0], covariances[1], covariances[2], covariances[3], covariances[4], covariances[5], covariances[6]]
     return cov_df
 
 def compute_pearson_coeff(pearson_df, index_df, variables):
@@ -136,6 +145,18 @@ def compute_pearson_coeff(pearson_df, index_df, variables):
                 variable = variable - variable.mean()
                 coef = np.corrcoef(index_df_cov, variable)[0][1]
 
+            elif int(year_df_end) < int(year_var_end): # If the variable ends after the index
+                last_row = index_df.loc[year_df_end+"-"+month_df_end:].index[0]
+                variable = variable.loc[year_var_first+"-"+month_var_first:last_row]
+
+                last_row = index_df.loc[year_df_end+"-"+month_df_end:].index[0]
+                index_df_cov = index_df.loc[year_var_first+"-"+month_var_first:last_row]
+
+                # Substract the sample mean 
+                index_df_cov = index_df_cov - index_df_cov.mean()
+                variable = variable - variable.mean()
+                coef = np.corrcoef(index_df_cov, variable)[0][1]
+
             else: # If the variable ends before the index
                 last_row = index_df.loc[year_var_end+"-"+month_var_end:].index[0]
                 index_df_cov = index_df.loc[year_var_first+"-"+month_var_first:last_row]
@@ -146,7 +167,7 @@ def compute_pearson_coeff(pearson_df, index_df, variables):
 
         pearson_coeffs.append(coef)
 
-    pearson_df.loc[len(pearson_df)] = [pearson_coeffs[0], pearson_coeffs[1], pearson_coeffs[2], pearson_coeffs[3]]
+    pearson_df.loc[len(pearson_df)] = [pearson_coeffs[0], pearson_coeffs[1], pearson_coeffs[2], pearson_coeffs[3], pearson_coeffs[4], pearson_coeffs[5], pearson_coeffs[6]]
     return pearson_df
 
 def compute_t_test(index_df, variable, significance_level=0.05):
@@ -432,36 +453,36 @@ def forecast_exog(train_data, test_data, forecast_length, method="rolling_window
 ##### MAIN #####
 
 ## Load the data from pre-processing ##
-wine_df, watch_df, art_df, gold_df, sp500_df, cpi_df, bond_yield_df = preprocessing.main(univariate=False)
+wine_df, watch_df, art_df, gold_df, sp500_df, cpi_df, bond_yield_df, crude_oil_df, spRealEstate_df, usdx_df = preprocessing.main(univariate=False)
 
 # Compute covariance matrix between each pair of correlated variables and index
 # Log transform the data to stabilize variance and get more accurate covariance
-wine_cov = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield"])
-wine_cov = compute_covariance(wine_cov, np.log(wine_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
-watch_cov = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield"])
-watch_cov = compute_covariance(watch_cov, np.log(watch_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
-art_cov = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield"])
-art_cov = compute_covariance(art_cov, np.log(art_df.observed), [ np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
+wine_cov = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield", "Crude Oil", "S&P US Real Estate", "USDX"])
+wine_cov = compute_covariance(wine_cov, np.log(wine_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed, np.log(crude_oil_df.observed), np.log(spRealEstate_df.observed), np.log(usdx_df.observed)])
+watch_cov = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield", "Crude Oil", "S&P US Real Estate", "USDX"])
+watch_cov = compute_covariance(watch_cov, np.log(watch_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed, np.log(crude_oil_df.observed), np.log(spRealEstate_df.observed), np.log(usdx_df.observed)])
+art_cov = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield", "Crude Oil", "S&P US Real Estate", "USDX"])
+art_cov = compute_covariance(art_cov, np.log(art_df.observed), [ np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed, np.log(crude_oil_df.observed), np.log(spRealEstate_df.observed), np.log(usdx_df.observed)])
 # print(wine_cov)
 # print(watch_cov)
 # print(art_cov)
 
-# Big covariance between Gold and Wine, Crypto and Watch, SP500 and Art
+# Big covariance between Gold and Wine, SP500, SP US Real Estate and Watch, SP500 and Art
 # Bond Yield has a negative covariance with all indexes, and is a bit biased, because I cannot log transform it since it has negative values
 
 # Compute Pearson correlation coefficient between each pair of correlated variables and index
 # Log transform the data to stabilize variance and get more accurate coefficient
-wine_pearson_coeff = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield"])
-wine_pearson_coeff = compute_pearson_coeff(wine_pearson_coeff, np.log(wine_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
-watch_pearson_coeff = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield"])
-watch_pearson_coeff = compute_pearson_coeff(watch_pearson_coeff, np.log(watch_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
-art_pearson_coeff = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield"])
-art_pearson_coeff = compute_pearson_coeff(art_pearson_coeff, np.log(art_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed])
+wine_pearson_coeff = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield", "Crude Oil", "S&P US Real Estate", "USDX"])
+wine_pearson_coeff = compute_pearson_coeff(wine_pearson_coeff, np.log(wine_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed, np.log(crude_oil_df.observed), np.log(spRealEstate_df.observed), np.log(usdx_df.observed)])
+watch_pearson_coeff = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield", "Crude Oil", "S&P US Real Estate", "USDX"])
+watch_pearson_coeff = compute_pearson_coeff(watch_pearson_coeff, np.log(watch_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed, np.log(crude_oil_df.observed), np.log(spRealEstate_df.observed), np.log(usdx_df.observed)])
+art_pearson_coeff = pd.DataFrame(columns = ["Gold", "SP500", "CPI", "Bond Yield", "Crude Oil", "S&P US Real Estate", "USDX"])
+art_pearson_coeff = compute_pearson_coeff(art_pearson_coeff, np.log(art_df.observed), [np.log(gold_df.observed), np.log(sp500_df.observed), np.log(cpi_df.observed), bond_yield_df.observed, np.log(crude_oil_df.observed), np.log(spRealEstate_df.observed), np.log(usdx_df.observed)])
 # print(wine_pearson_coeff)
 # print(watch_pearson_coeff)
 # print(art_pearson_coeff)
 
-# Big correlation between Gold and Wine, watch and CPI, SP500+CPI and Art
+# Big correlation between Gold,USDX and Wine, watch and S&P US Real Estate, SP500+CPI+RealEstate+USDX and Art
 # Bond Yield has a negative correlation with all indexes, and is a bit biased, because I cannot log transform it since it has negative values
 
 # Test the significance of the correlation coefficient with a t-test (two sample), alternative: Mann-Whitney U test (which is non-parametric)
@@ -469,6 +490,10 @@ art_pearson_coeff = compute_pearson_coeff(art_pearson_coeff, np.log(art_df.obser
 # compute_t_test(np.log(art_df.observed), np.log(sp500_df.observed)) # Significant correlation
 # compute_t_test(np.log(wine_df.observed), np.log(cpi_df.observed)) # significant correlation
 # compute_t_test(np.log(watch_df.observed), np.log(cpi_df.observed)) # significant correlation
+# compute_t_test(np.log(wine_df.observed), np.log(usdx_df.observed)) # significant correlation
+# compute_t_test(np.log(watch_df.observed), np.log(spRealEstate_df.observed)) # significant correlation
+# compute_t_test(np.log(art_df.observed), np.log(spRealEstate_df.observed)) # significant correlation
+# compute_t_test(np.log(art_df.observed), np.log(usdx_df.observed)) # significant correlation
 
 # NB forecasting using exogenous variables requires future exog data to be known in advance which is not the case.
 # Thus I need to forecast the exogenous variables as well using ARIMA, and use that forecast as input for the main forecast of our index.

@@ -230,6 +230,48 @@ def get_US10_year_bond_yield(path):
     df = pd.read_csv(path)
     return df
 
+def get_Crude_Oil(path):
+    df = pd.read_csv(path)
+    return df
+
+def get_spRealEstate(path):
+    df = pd.read_csv(path)
+    return df
+
+def get_monthly_USDIndex(path):
+    df = pd.read_csv(path)
+
+    average_monthly_prices = []
+    date = []
+
+    temp_month = []
+    temp_month_values = []
+
+    for index, value in df.iterrows():
+        iter_date = str(value.iloc[0])
+        current_month = str(iter_date).split('-')[1]
+        price = value.iloc[1]
+
+        if (current_month not in temp_month) and (temp_month != []):
+            agp = (sum(temp_month_values)/len(temp_month_values))
+            date.append(previous_date) # if we took iter_date, the month would have already changed
+            average_monthly_prices.append(agp)
+
+            temp_month = []
+            temp_month_values = []
+
+        if df['Index'].iloc[-1] == price: # last month check
+            agp = (sum(temp_month_values)/len(temp_month_values))
+            date.append(previous_date)
+            average_monthly_prices.append(agp)
+        
+        temp_month.append(current_month)
+        temp_month_values.append(price)
+        previous_date = iter_date # to make sure we get the right month
+
+    df_average = pd.DataFrame({'Date': date, 'Index': average_monthly_prices})
+    return df_average
+
 ##### ADJUST FOR INFLATION #####
 
 def get_cpi_yearly_rates(cpi_df): # Get yearly average rates
@@ -488,6 +530,40 @@ def main(univariate=True):
     # plt.title('United States 10-Year Bond Yield (Monthly) USD (%)')
     # plt.show()
 
+    # Crude Oil (USD)
+    crude_oil_df = get_Crude_Oil(r'data\Correlated Variables\Crude Oil Prices\WTI Crude Oil Prices.csv')
+    # plt.plot(crude_oil_df['Date'], crude_oil_df['Real'])
+    # plt.xlabel('Date')
+    # plt.ylabel('Crude Oil Price (USD)')
+    # plt.xticks([0, len(crude_oil_df)/2, len(crude_oil_df)-1])
+    # plt.title('Crude Oil Prices (Monthly) Inflation Adjusted')
+    # plt.show()
+    # Now plot SP500 nominal (not inflation adjusted)
+    # plt.plot(crude_oil_df['Date'], crude_oil_df['Nominal'])
+    # plt.xlabel('Date')
+    # plt.ylabel('Crude Oil Price (USD)')
+    # plt.xticks([0, len(crude_oil_df)/2, len(crude_oil_df)-1])
+    # plt.title('Crude Oil Prices (Monthly) NOT Inflation Adjusted')
+    # plt.show()
+
+    # S&P Real Estate (USD)
+    spRealEstate_df = get_spRealEstate(r'data\Correlated Variables\S&P Real-Estate Index\S&P CoreLogic Case-Shiller U.S National Home Price Index.csv')
+    # plt.plot(spRealEstate_df['Date'], spRealEstate_df['Index'])
+    # plt.xlabel('Date')
+    # plt.ylabel('S&P Real Estate Price (USD)')
+    # plt.xticks([0, len(spRealEstate_df)/2, len(spRealEstate_df)-1])
+    # plt.title('S&P Real Estate Prices (Monthly) Inflation Adjusted')
+    # plt.show()
+
+    # USD Index (USD)
+    USDIndex_df = get_monthly_USDIndex(r'data\Correlated Variables\US Dollar Index\USDX_values.csv')
+    # plt.plot(USDIndex_df['Date'], USDIndex_df['Index'])
+    # plt.xlabel('Date')
+    # plt.ylabel('USD Index Value')
+    # plt.xticks([0, len(USDIndex_df)/2, len(USDIndex_df)-1])
+    # plt.title('USD Index (Monthly Average) USD Not Inflation Adjusted')
+    # plt.show()
+
     ## Now adjust all the data for inflation ##
 
     # NB : Art index is already adjusted for inflation in its original data
@@ -498,8 +574,11 @@ def main(univariate=True):
     # Adjust the correlated variable's inflation:
     # CPI Index is inflation itself no need to adjust
     # SP500 is already adjusted for inflation (Real column)
+    # NB : Crude Oil (Real column) and S&P Real Estate are already adjusted for inflation in their original data
     sp500_df = sp500_df.drop(columns=['Nominal']) # Drop the nominal column
     gold_df = adjust_inflation(gold_df, yearly_cpi_df)
+    crude_oil_df = crude_oil_df.drop(columns=['Nominal']) # Drop the nominal column
+    usdx_df = adjust_inflation(USDIndex_df, yearly_cpi_df)
 
     # Adjust inflation on the ten year bond yield
     df_inflation_percent = calculate_inflation_percent_yearly(yearly_cpi_df)
@@ -517,6 +596,9 @@ def main(univariate=True):
     sp500_df_decomp = decomp_additive(sp500_df, name='S&P 500 Index')
     cpi_df_decomp = decomp_additive(cpi_df, name='CPI Index')
     bond_yield_df_decomp = decomp_additive(bond_yield_df, name='Bond Yield')
+    crude_oil_df_decomp = decomp_additive(crude_oil_df, name='Crude Oil Prices')
+    spRealEstate_df_decomp = decomp_additive(spRealEstate_df, name='S&P Real Estate Index')
+    usdx_df_decomp = decomp_additive(usdx_df, name='USD Index')
 
     ## Create final DF ##
     # NaN values are present for trend and residual due to built-in filtering in decomposition
@@ -527,9 +609,9 @@ def main(univariate=True):
         
     else:
         # Ready for multivariate work
-        return wine_df_decomp, watch_df_decomp, art_df_decomp, gold_df_decomp, sp500_df_decomp, cpi_df_decomp, bond_yield_df_decomp
+        return wine_df_decomp, watch_df_decomp, art_df_decomp, gold_df_decomp, sp500_df_decomp, cpi_df_decomp, bond_yield_df_decomp, crude_oil_df_decomp, spRealEstate_df_decomp, usdx_df_decomp
 
-# main(univariate=True) # Uncomment to test pre-processing
+# main(univariate=False) # Uncomment to test pre-processing
 
 
 
