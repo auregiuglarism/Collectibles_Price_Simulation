@@ -12,8 +12,6 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 import statsmodels.api as sm
 
-# TODO: Implement the rolling window validation method for the optimal (S)ARIMA model for each index
-
 def create_model(train, order, seasonal_order=None):
     if seasonal_order == None: # ARIMA Model
         model = ARIMA(train, trend='n', order=order,  
