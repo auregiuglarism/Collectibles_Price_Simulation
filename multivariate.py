@@ -377,7 +377,14 @@ def align_data(index_df, exog):
             index_df = index_df.loc[year_var_first+"-"+month_var_first:last_row] 
 
             if index_df.index[-1].split("-")[1] != exog.index[-1].split("-")[1]: # If slice ends in different month
-                index_df = index_df[:-1]   
+                index_df = index_df[:-1] 
+
+        elif int(year_df_end) < int(year_var_end): # If the variable ends after the index
+            last_row = index_df.loc[year_df_end+"-"+month_df_end:].index[0]
+            exog = exog.loc[year_var_first+"-"+month_var_first:last_row]
+
+            last_row = index_df.loc[year_df_end+"-"+month_df_end:].index[0]
+            index_df = index_df.loc[year_var_first+"-"+month_var_first:last_row]  
 
         else: # If the variable ends before the index
             last_row = index_df.loc[year_var_end+"-"+month_var_end:].index[0]
@@ -486,20 +493,31 @@ art_pearson_coeff = compute_pearson_coeff(art_pearson_coeff, np.log(art_df.obser
 
 # Test the significance of the correlation coefficient with a t-test (two sample), alternative: Mann-Whitney U test (which is non-parametric)
 # compute_t_test(np.log(wine_df.observed), np.log(gold_df.observed)) # Significant correlation
-# compute_t_test(np.log(art_df.observed), np.log(sp500_df.observed)) # Significant correlation
-# compute_t_test(np.log(wine_df.observed), np.log(cpi_df.observed)) # significant correlation
+# compute_t_test(np.log(wine_df.observed), np.log(usdx_df.observed)) # Significant correlation
 # compute_t_test(np.log(watch_df.observed), np.log(cpi_df.observed)) # significant correlation
-# compute_t_test(np.log(wine_df.observed), np.log(usdx_df.observed)) # significant correlation
 # compute_t_test(np.log(watch_df.observed), np.log(spRealEstate_df.observed)) # significant correlation
 # compute_t_test(np.log(art_df.observed), np.log(spRealEstate_df.observed)) # significant correlation
 # compute_t_test(np.log(art_df.observed), np.log(usdx_df.observed)) # significant correlation
+# compute_t_test(np.log(art_df.observed), np.log(sp500_df.observed)) # Significant correlation
+# compute_t_test(np.log(art_df.observed), np.log(cpi_df.observed)) # Significant correlation
 
 # NB forecasting using exogenous variables requires future exog data to be known in advance which is not the case.
 # Thus I need to forecast the exogenous variables as well using ARIMA, and use that forecast as input for the main forecast of our index.
 
 # WINE
 arima_wine = (3,1,3)
-wine_adjusted, exog_wine = align_data(wine_df.observed, gold_df.observed)
+wine_adjusted, exog_wine = align_data(wine_df.observed, usdx_df.observed)
+
+# Evaluate the model
+# eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
+# eval_df = evaluate_model_with_Plots(wine_adjusted, [arima_wine], eval_df, exog_wine, seasonal=False, index='wine')
+# print(eval_df)
+
+sarima_wine = [(3,1,3),(3,0,6,12)]
+# wine_adjusted, exog_wine = align_data(wine_df.observed, usdx_df.observed)
+# eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
+# eval_df = evaluate_model_with_Plots(wine_adjusted, [sarima_wine[1]], eval_df, exog_wine, seasonal=True, index='wine', arima_order=sarima_wine[0])
+# print(eval_df)
 
 wine_train = wine_adjusted[:int(0.8*len(wine_adjusted))]
 wine_test = wine_adjusted[int(0.8*len(wine_adjusted)):]
@@ -507,13 +525,9 @@ wine_test = wine_adjusted[int(0.8*len(wine_adjusted)):]
 wine_train_exog = exog_wine[:int(0.8*len(exog_wine))]
 wine_test_exog = exog_wine[int(0.8*len(exog_wine)):]
 
-# Evaluate the model
-# eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
-# eval_df = evaluate_model_with_Plots(wine_adjusted, [arima_wine], eval_df, exog_wine, seasonal=False, index='wine')
-# print(eval_df)
-
 # Save optimal model
 # wine_model_exog = create_model(wine_adjusted, arima_wine, exog_wine, index='wine') 
+# seasonal_wine_model_exog = create_model(wine_adjusted, sarima_wine[0], exog_wine, seasonal_order=sarima_wine[1], index='wine')
 
 # Forecast
 # Now that the optimal has been found, use it to forecast
@@ -529,7 +543,18 @@ end_long = "2035-02-28"
 
 # WATCH
 arima_watch = (2,1,3)
-watch_adjusted, exog_watch = align_data(watch_df.observed, cpi_df.observed)
+watch_adjusted, exog_watch = align_data(watch_df.observed, spRealEstate_df.observed)
+
+# Evaluate the model
+# eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
+# eval_df = evaluate_model_with_Plots(watch_adjusted, [arima_watch], eval_df, exog_watch, seasonal=False, index='watch')
+# print(eval_df)
+
+# sarima_watch = [(2,1,3),(1,0,3,12)]
+# watch_adjusted, exog_watch = align_data(watch_df.observed, spRealEstate_df.observed)
+# eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
+# eval_df = evaluate_model_with_Plots(watch_adjusted, [sarima_watch[1]], eval_df, exog_watch, seasonal=True, index='watch', arima_order=sarima_watch[0])
+# print(eval_df)
 
 watch_train = watch_adjusted[:int(0.8*len(watch_adjusted))]
 watch_test = watch_adjusted[int(0.8*len(watch_adjusted)):]
@@ -537,13 +562,9 @@ watch_test = watch_adjusted[int(0.8*len(watch_adjusted)):]
 watch_train_exog = exog_watch[:int(0.8*len(exog_watch))]
 watch_test_exog = exog_watch[int(0.8*len(exog_watch)):]
 
-# Evaluate the model
-# eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
-# eval_df = evaluate_model_with_Plots(watch_adjusted, [arima_watch], eval_df, exog_watch, seasonal=False, index='watch')
-# print(eval_df)
-
 # Save optimal model
 # watch_model_exog = create_model(watch_adjusted, arima_watch, exog_watch, index='watch')
+# seasonal_watch_model_exog = create_model(watch_adjusted, sarima_watch[0], exog_watch, seasonal_order=sarima_watch[1], index='watch')
 
 # Forecast
 # Now that the optimal has been found, use it to forecast
@@ -559,19 +580,18 @@ end_long = "2034-02-01"
 
 # ART
 arima_art = (13,1,6)
-art_adjusted, exog_art = align_data(art_df.observed, cpi_df.observed) 
+# art_adjusted, exog_art = align_data(art_df.observed, cpi_df.observed) 
 
 # Evaluate the model
 # eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
 # eval_df = evaluate_model_with_Plots(art_adjusted, [arima_art], eval_df, exog_art, seasonal=False, index='art')
-# print(eval_df) # Best variable for ARIMAX art is CPI
+# print(eval_df) 
 
-# Since SARIMA > ARIMA for Art, evaluate SARIMAX 
 sarima_art = [(4,1,2),(5,0,6,6)]
-# art_adjusted, exog_art = align_data(art_df.observed, sp500_df.observed)
-# eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
-# eval_df = evaluate_model_with_Plots(art_adjusted, [sarima_art[1]], eval_df, exog_art, seasonal=True, index='art', arima_order=sarima_art[0])
-# print(eval_df) # Best variable for SARIMAX art is SP500
+art_adjusted, exog_art = align_data(art_df.observed, cpi_df.observed)
+eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
+eval_df = evaluate_model_with_Plots(art_adjusted, [sarima_art[1]], eval_df, exog_art, seasonal=True, index='art', arima_order=sarima_art[0])
+print(eval_df) 
 
 art_train = art_adjusted[:int(0.8*len(art_adjusted))]
 art_test = art_adjusted[int(0.8*len(art_adjusted)):]
