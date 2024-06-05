@@ -344,6 +344,7 @@ wine_df_decomp, watch_df_decomp, art_df_decomp = preprocessing.main(univariate=T
 wine_residuals = wine_df_decomp.resid.dropna() # Remove 6 NaN values at the start + end
 wine_residuals_train = wine_residuals[:int(0.8*len(wine_residuals))]
 wine_residuals_test = wine_residuals[int(0.8*len(wine_residuals)):]
+eval_df = pd.DataFrame(columns=['ARIMA Order', 'SARIMA Order', 'AIC', 'BIC', 'MAE', 'MSE', 'RMSE', 'MAPE %'])
 
 # Are the wine residuals stationary ? Yes so set d=0 in ARIMA model
 
@@ -361,6 +362,9 @@ arima_resid_wine = (4,0,1) # (3,0,12) or (4,0,1) from the candidates
 # check_model_with_BoxJenkins(wine_residuals, arima_resid_wine, seasonal_start_cd=None, index='wine')
 # (4,0,1) has white noise residuals
 # (3,0,12) has white noise residuals
+
+eval_df = evaluate_model_with_Plots(wine_residuals, [(4,0,1)], eval_df, index='wine', arima_order=(4,0,1)) # (3,0,12) or (4,0,1) from the candidates
+print(eval_df)
 
 # Save optimal model
 # wine_model_resid = create_model(wine_residuals_train, arima_resid_wine, seasonal_order=None, index='wine_residuals') # Only run once to save the optimal model

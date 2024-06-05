@@ -12,11 +12,14 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 import statsmodels.api as sm
 
-def create_model(train, order, seasonal_order=None):
+def create_model(train, order, seasonal_order=None, approx=False):
     if seasonal_order == None: # ARIMA Model
         model = ARIMA(train, trend='n', order=order,  
             enforce_stationarity=True,
             enforce_invertibility=True) 
+        
+        if approx == True: # Avoid LU Decomposition error when searching for optimal window size
+            model.initialize_approximate_diffuse()
         
         fit_results = model.fit()
         
@@ -112,7 +115,7 @@ def rolling_window_forecast(data, train, test, model_order, window_size, forecas
     plt.ylabel('Index value')
     plt.show()
 
-def rolling_window_validation(data, model_order, window_size, eval_df, seasonal_order=None):
+def rolling_window_validation(data, model_order, window_size, eval_df, approx=False, seasonal_order=None):
     # NB: Make sure that window_size is an integer
     mae_l = []
     mse_l = []
@@ -138,7 +141,7 @@ def rolling_window_validation(data, model_order, window_size, eval_df, seasonal_
     end = False
 
     for i in range(int(len(data)/window_size)):
-        model,_ = create_model(history, model_order, seasonal_order) # Leave seasonal_order as None for ARIMA in rolling window function call
+        model,_ = create_model(history, model_order, seasonal_order, approx) # Leave seasonal_order as None for ARIMA in rolling window function call
 
         if end == True:
             break
@@ -188,7 +191,31 @@ def rolling_window_validation(data, model_order, window_size, eval_df, seasonal_
     print("RMSE Mean:", np.mean(rmse_l_mean))
     print("MAPE % Mean:", np.mean(mape_l_mean))
 
-    return eval_df
+    return eval_df, np.mean(mape_l_mean), np.mean(mape_l_bas) # Only for window size optimization.
+
+def determine_best_window_size(data, model_order, eval_df, seasonal_order=None, approx=False):
+
+    mapes_mean = []
+    mapes_baseline = []
+    mapes_model = []
+    window_sizes = []
+
+    for window_size in range(3, len(data)-3):
+        eval_df, mean_mean, mean_bas = rolling_window_validation(data, model_order, window_size, eval_df, approx, seasonal_order=None,)
+
+        window_sizes.append(window_size)
+        mapes_model.append(eval_df['MAPE %'].iloc[-1])
+        mapes_mean.append(mean_mean)
+        mapes_baseline.append(mean_bas)
+
+    plt.plot(window_sizes, mapes_model, color="red", label="model")
+    plt.plot(window_sizes, mapes_mean, color="blue", label="mean")
+    plt.plot(window_sizes, mapes_baseline, color="green", label="baseline")
+    plt.legend(loc='best')
+    plt.title('MAPE(%) Accuracy for different window sizes')
+    plt.xlabel('Window size')
+    plt.ylabel('MAPE %')
+    plt.show()
         
 ##### MAIN #####
 
@@ -205,9 +232,11 @@ wine_test = wine_df_decomp.observed[int(0.8*len(wine_df_decomp.observed)):]
 
 arima_wine = (3,1,3) # We already know from previous code that this is the optimal ARIMA
 
-# eval_df = pd.DataFrame(columns=['ARIMA', 'Seasonal Order', 'AIC', 'BIC', 'MAE', 'MSE', 'RMSE', 'MAPE %'])
-# eval_df = rolling_window_validation(wine_df_decomp.observed, arima_wine, 10, eval_df)
+eval_df = pd.DataFrame(columns=['ARIMA', 'Seasonal Order', 'AIC', 'BIC', 'MAE', 'MSE', 'RMSE', 'MAPE %'])
+# eval_df,_,_ = rolling_window_validation(wine_df_decomp.observed, arima_wine, 3, eval_df)
 # print(eval_df)
+
+# determine_best_window_size(wine_df_decomp.observed, arima_wine, eval_df)
 
 long_term = wine_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
 ref_start = wine_df_decomp.observed.index[-1] # "2023-12-31"
@@ -222,9 +251,11 @@ watch_test = watch_df_decomp.observed[int(0.8*len(watch_df_decomp.observed)):]
 
 arima_watch = (2,1,3) # We already know from previous code that this is the optimal ARIMA
 
-# eval_df = pd.DataFrame(columns=['ARIMA', 'Seasonal Order', 'AIC', 'BIC', 'MAE', 'MSE', 'RMSE', 'MAPE %'])
+eval_df = pd.DataFrame(columns=['ARIMA', 'Seasonal Order', 'AIC', 'BIC', 'MAE', 'MSE', 'RMSE', 'MAPE %'])
 # eval_df = rolling_window_validation(watch_df_decomp.observed, arima_watch, 10, eval_df)
 # print(eval_df)
+
+# determine_best_window_size(watch_df_decomp.observed, arima_watch, eval_df)
 
 long_term = watch_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
 ref_start = watch_df_decomp.observed.index[-1] # "2023-12-01"
@@ -240,9 +271,11 @@ art_test = art_df_decomp.observed[int(0.8*len(art_df_decomp.observed)):]
 arima_art = (13,1,6) # We already know from previous code that this is the optimal ARIMA
 sarima_art = [(4,1,2),(5,0,6,6)]
 
-# eval_df = pd.DataFrame(columns=['ARIMA', 'Seasonal Order', 'AIC', 'BIC', 'MAE', 'MSE', 'RMSE', 'MAPE %'])
+eval_df = pd.DataFrame(columns=['ARIMA', 'Seasonal Order', 'AIC', 'BIC', 'MAE', 'MSE', 'RMSE', 'MAPE %'])
 # eval_df = rolling_window_validation(art_df_decomp.observed, sarima_art[0], 10, eval_df, seasonal_order=sarima_art[1])
 # print(eval_df)
+
+determine_best_window_size(art_df_decomp.observed, arima_art, eval_df, approx=True)
 
 long_term = art_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
 ref_start = art_df_decomp.observed.index[-1] # "2023-09-01"

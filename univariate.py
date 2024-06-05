@@ -503,6 +503,8 @@ arima_art = (13,1,6)
 sarima_art = [(4,1,2),(5,0,6,6)]
 # check_model_with_BoxJenkins(art_train, sarima_art[0], sarima_art[1], index='art')
 # Residuals are white noise.
+eval_df = evaluate_model_with_Plots(art_df_decomp.observed, [sarima_art[1]], eval_df, seasonal=True, index='art', arima_order=sarima_art[0])
+print(eval_df)
 
 # Save optimal (S)ARIMA model
 # art_model = create_model(art_train, arima_art, seasonal_order=None, index='art') # Only run once to save the optimal model
