@@ -363,7 +363,7 @@ arima_resid_wine = (4,0,1) # (3,0,12) or (4,0,1) from the candidates
 # (4,0,1) has white noise residuals
 # (3,0,12) has white noise residuals
 
-eval_df = evaluate_model_with_Plots(wine_residuals, [(4,0,1)], eval_df, index='wine', arima_order=(4,0,1)) # (3,0,12) or (4,0,1) from the candidates
+eval_df = evaluate_model_with_Plots(wine_residuals, [(4,0,1)], eval_df, index='wine') # (3,0,12) or (4,0,1) from the candidates
 print(eval_df)
 
 # Save optimal model
