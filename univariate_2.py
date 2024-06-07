@@ -300,7 +300,6 @@ def forecast_decomp_recomb_strategy(data, resid_test_data, resid_prediction, sea
     # Forecast trend depending on chosen method:
     trend = trend_data[6:-6] 
     if method == 'mean':
-        print(len(trend), len(resid_prediction))
         trend_mean = np.mean(trend[int(0.8*len(trend)):]) # Mean of the last 20% of the data
         trend_prediction = np.full(len(resid_prediction), trend_mean)
     
@@ -329,6 +328,114 @@ def forecast_decomp_recomb_strategy(data, resid_test_data, resid_prediction, sea
     plt.ylabel('Index value')
     plt.show()
 
+def evaluate_residual_strategy(data, residuals, residual_order, trend_data, seasonal_data, eval_df, index='wine', seasonal=False):
+    # Init evaluation metrics
+    mae_l = []
+    mse_l = []
+    rmse_l = []
+    mape_l = []
+
+    mae_l_bas = []
+    mse_l_bas = []
+    rmse_l_bas = []
+    mape_l_bas = []
+
+    mae_l_mean = []
+    mse_l_mean = []
+    rmse_l_mean = []
+    mape_l_mean = []
+
+    # Make sure residuals, data, trend are the same length
+    data = data[6:-6] # Remove 6 values at the start + end
+    trend_data = trend_data[6:-6] # Remove 6 values at the start + end
+    seasonal = seasonal_data[6:-6]
+    
+    # Isolate seasonal signal
+    seasonal = seasonal[:12] # Period of 12
+
+    # Split cross validation
+    splits = [0.5, 0.65, 0.85, 1.0]
+    for split in splits:
+        split_data = data[:int(split*len(data))]
+        train = split_data[:int(0.8*len(split_data))]
+        test = split_data[int(0.8*len(split_data)):]
+
+        split_residuals = residuals[:int(split*len(residuals))]
+        train_residuals = split_residuals[:int(0.8*len(split_residuals))]
+        test_residuals = split_residuals[int(0.8*len(split_residuals)):]
+
+        split_trend = trend_data[:int(split*len(trend_data))]
+        train_trend = split_trend[:int(0.8*len(split_trend))]
+        test_trend = split_trend[int(0.8*len(split_trend)):]
+
+        # Forecast residual
+        fit_results, _ = create_model(train_residuals, residual_order, None, index)
+        resid_prediction, _, _, _, _, _, _, _, _, _, _, _, _ = test_model(test_residuals, fit_results, seasonal, index)
+
+        # Forecast seasonality
+        seasonal_prediction = []
+        counter = 0
+        for i in range(0, len(test_residuals)):
+            seasonal_prediction.append(seasonal[counter])
+            if counter == (len(seasonal)-1):
+                counter = 0
+            else:
+                counter += 1
+
+        # Forecast trend using mean:
+        trend_mean = np.mean(test_trend) # Mean of the test trend data (last 20 of full 80/20 split)
+        trend_prediction = np.full(len(test_residuals), trend_mean)
+
+        # Recombine the original scale to get the forecast
+        forecast = resid_prediction + seasonal_prediction + trend_prediction
+
+        # Evaluate the forecast with the test data (len(forecast) == len(test))
+        y_test = test
+        baseline = np.full(len(y_test), y_test[0])
+        baseline_mean = np.full(len(y_test), y_test.mean())
+
+        mae = mean_absolute_error(y_test, forecast)
+        mse = mean_squared_error(y_test, forecast)
+        mae_baseline = mean_absolute_error(y_test, baseline)
+        mse_baseline = mean_squared_error(y_test, baseline)
+        mae_baseline_mean = mean_absolute_error(y_test, baseline_mean)
+        mse_baseline_mean = mean_squared_error(y_test, baseline_mean)
+        rmse = np.sqrt(mse)
+        rmse_baseline = np.sqrt(mse_baseline)
+        rmse_baseline_mean = np.sqrt(mse_baseline_mean)
+        mape = np.mean(np.abs((y_test - forecast) / y_test)) * 100
+        mape_baseline = np.mean(np.abs((y_test - baseline) / y_test)) * 100
+        mape_baseline_mean = np.mean(np.abs((y_test - baseline_mean) / y_test)) * 100
+
+        # Store evaluation metrics
+        mae_l.append(mae)
+        mse_l.append(mse)
+        rmse_l.append(rmse)
+        mape_l.append(mape)
+
+        mae_l_bas.append(mae_baseline)
+        mse_l_bas.append(mse_baseline)
+        rmse_l_bas.append(rmse_baseline)
+        mape_l_bas.append(mape_baseline)
+
+        mae_l_mean.append(mae_baseline_mean)
+        mse_l_mean.append(mse_baseline_mean)
+        rmse_l_mean.append(rmse_baseline_mean)
+        mape_l_mean.append(mape_baseline_mean)
+
+    # Return eval_df
+    eval_df.loc[len(eval_df)] = [residual_order, None, None, None, np.mean(mae_l), np.mean(mse_l), np.mean(rmse_l), np.mean(mape_l)]
+
+    print("MAE Baseline:", np.mean(mae_l_bas))
+    print("MSE Baseline:", np.mean(mse_l_bas))
+    print("RMSE Baseline:", np.mean(rmse_l_bas))
+    print("MAPE % Baseline:", np.mean(mape_l_bas))
+    print("MAE Mean:", np.mean(mae_l_mean))
+    print("MSE Mean:", np.mean(mse_l_mean))
+    print("RMSE Mean:", np.mean(rmse_l_mean))
+    print("MAPE % Mean:", np.mean(mape_l_mean))
+
+    return eval_df
 
 ##### MAIN #####
 
@@ -363,7 +470,7 @@ arima_resid_wine = (4,0,1) # (3,0,12) or (4,0,1) from the candidates
 # (4,0,1) has white noise residuals
 # (3,0,12) has white noise residuals
 
-eval_df = evaluate_model_with_Plots(wine_residuals, [(4,0,1)], eval_df, index='wine') # (3,0,12) or (4,0,1) from the candidates
+eval_df = evaluate_residual_strategy(wine_df_decomp.observed, wine_residuals, arima_resid_wine, wine_df_decomp.trend, wine_df_decomp.seasonal, eval_df, index='wine', seasonal=False)
 print(eval_df)
 
 # Save optimal model
@@ -382,6 +489,7 @@ print(eval_df)
 watch_residuals = watch_df_decomp.resid.dropna() # Remove 6 NaN values at the start + end
 watch_residuals_train = watch_residuals[:int(0.8*len(watch_residuals))]
 watch_residuals_test = watch_residuals[int(0.8*len(watch_residuals)):]
+eval_df = pd.DataFrame(columns=['ARIMA Order', 'SARIMA Order', 'AIC', 'BIC', 'MAE', 'MSE', 'RMSE', 'MAPE %'])
 
 # Are the watch residuals stationary ? Yes so set d=0 in ARIMA model
 
@@ -395,6 +503,9 @@ watch_residuals_test = watch_residuals[int(0.8*len(watch_residuals)):]
 arima_resid_watch = (2,0,0) 
 # check_model_with_BoxJenkins(watch_residuals, arima_resid_watch, seasonal_start_cd=None, index='watch')
 # Residuals are white noise
+
+# eval_df = evaluate_residual_strategy(watch_df_decomp.observed, watch_residuals, arima_resid_watch, watch_df_decomp.trend, watch_df_decomp.seasonal, eval_df, index='watch', seasonal=False)
+# print(eval_df)
 
 # Save optimal model
 # watch_model_resid = create_model(watch_residuals_train, arima_resid_watch, seasonal_order=None, index='watch_residuals') # Only run once to save the optimal model
@@ -412,6 +523,7 @@ arima_resid_watch = (2,0,0)
 art_residuals = art_df_decomp.resid.dropna() # Remove 6 NaN values at the start + end
 art_residuals_train = art_residuals[:int(0.8*len(art_residuals))]
 art_residuals_test = art_residuals[int(0.8*len(art_residuals)):]
+eval_df = pd.DataFrame(columns=['ARIMA Order', 'SARIMA Order', 'AIC', 'BIC', 'MAE', 'MSE', 'RMSE', 'MAPE %'])
 
 # Are the art residuals stationary ? Yes so set d=0 in ARIMA model
 
@@ -428,6 +540,9 @@ art_residuals_test = art_residuals[int(0.8*len(art_residuals)):]
 arima_resid_art = (6,0,10) 
 # check_model_with_BoxJenkins(art_residuals, arima_resid_art, seasonal_start_cd=None, index='art')
 # Residuals are white noise
+
+eval_df = evaluate_residual_strategy(art_df_decomp.observed, art_residuals, arima_resid_art, art_df_decomp.trend, art_df_decomp.seasonal, eval_df, index='art', seasonal=False)
+print(eval_df)
 
 # Save optimal model
 # art_model_resid = create_model(art_residuals_train, arima_resid_art, seasonal_order=None, index='art_residuals') # Only run once to save the optimal model
