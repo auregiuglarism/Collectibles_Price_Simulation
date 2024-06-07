@@ -431,6 +431,9 @@ arima_watch = (2,1,3)
 # check_model_with_BoxJenkins(watch_train, arima_watch, seasonal_start_cd=None, index='watch')
 # Residuals are white noise.
 
+# eval_df = evaluate_model_with_Plots(watch_df_decomp.observed, [arima_watch], eval_df, index='watch')
+# print(eval_df)
+
 # Seasonality pattern repeating every 12 lags, thus set m=12. (ACF of the seasonal component)
 
 # Candidates are chosen based on the ACF and PACF plots
@@ -503,8 +506,8 @@ arima_art = (13,1,6)
 sarima_art = [(4,1,2),(5,0,6,6)]
 # check_model_with_BoxJenkins(art_train, sarima_art[0], sarima_art[1], index='art')
 # Residuals are white noise.
-eval_df = evaluate_model_with_Plots(art_df_decomp.observed, [sarima_art[1]], eval_df, seasonal=True, index='art', arima_order=sarima_art[0])
-print(eval_df)
+# eval_df = evaluate_model_with_Plots(art_df_decomp.observed, [sarima_art[1]], eval_df, seasonal=True, index='art', arima_order=sarima_art[0])
+# print(eval_df)
 
 # Save optimal (S)ARIMA model
 # art_model = create_model(art_train, arima_art, seasonal_order=None, index='art') # Only run once to save the optimal model

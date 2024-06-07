@@ -470,8 +470,8 @@ arima_resid_wine = (4,0,1) # (3,0,12) or (4,0,1) from the candidates
 # (4,0,1) has white noise residuals
 # (3,0,12) has white noise residuals
 
-eval_df = evaluate_residual_strategy(wine_df_decomp.observed, wine_residuals, arima_resid_wine, wine_df_decomp.trend, wine_df_decomp.seasonal, eval_df, index='wine', seasonal=False)
-print(eval_df)
+# eval_df = evaluate_residual_strategy(wine_df_decomp.observed, wine_residuals, arima_resid_wine, wine_df_decomp.trend, wine_df_decomp.seasonal, eval_df, index='wine', seasonal=False)
+# print(eval_df)
 
 # Save optimal model
 # wine_model_resid = create_model(wine_residuals_train, arima_resid_wine, seasonal_order=None, index='wine_residuals') # Only run once to save the optimal model
@@ -482,7 +482,7 @@ print(eval_df)
 # ref_start = wine_residuals.index[-1] # 2023-06-30
 # end_long = "2036-04-30"
 # wine_resid_prediction = forecast_model(wine_residuals, wine_residuals_test, long_term, "Long", end_date=end_long, model=None, seasonal=False, index='wine_residuals')
-# forecast_decomp_recomb_strategy(wine_df_decomp.observed, wine_residuals_test, wine_resid_prediction, wine_df_decomp.seasonal, wine_df_decomp.trend, end_long, method='walk_forward', index='wine', freq='M')
+# forecast_decomp_recomb_strategy(wine_df_decomp.observed, wine_residuals_test, wine_resid_prediction, wine_df_decomp.seasonal, wine_df_decomp.trend, end_long, method='mean', index='wine', freq='M')
 
 # WATCH
 # Initial Split into train and test (for after split cross validation)
@@ -541,8 +541,8 @@ arima_resid_art = (6,0,10)
 # check_model_with_BoxJenkins(art_residuals, arima_resid_art, seasonal_start_cd=None, index='art')
 # Residuals are white noise
 
-eval_df = evaluate_residual_strategy(art_df_decomp.observed, art_residuals, arima_resid_art, art_df_decomp.trend, art_df_decomp.seasonal, eval_df, index='art', seasonal=False)
-print(eval_df)
+# eval_df = evaluate_residual_strategy(art_df_decomp.observed, art_residuals, arima_resid_art, art_df_decomp.trend, art_df_decomp.seasonal, eval_df, index='art', seasonal=False)
+# print(eval_df)
 
 # Save optimal model
 # art_model_resid = create_model(art_residuals_train, arima_resid_art, seasonal_order=None, index='art_residuals') # Only run once to save the optimal model

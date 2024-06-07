@@ -259,8 +259,6 @@ window = 16
 long_term = watch_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
 ref_start = watch_df_decomp.observed.index[-1] # "2023-12-01"
 end_long = "2034-02-01"
-
-window = 12
 # rolling_window_forecast(watch_df_decomp.observed, watch_train, watch_test, arima_watch, window, long_term, end_long, index='watch')
 
 # ART
@@ -278,8 +276,7 @@ window = 12
 long_term = art_train.shape[0] # Full training set can go beyond that but it would be extrapolation, so less reliable
 ref_start = art_df_decomp.observed.index[-1] # "2023-09-01"
 end_long = "2051-02-01"
-
-# rolling_window_forecast(art_df_decomp.observed, art_train, art_test, sarima_art[0], window, long_term, end_long, index='art', seasonal_order=sarima_art[1])
+# rolling_window_forecast(art_df_decomp.observed, art_train, art_test, arima_art, window, long_term, end_long, index='art')
 
 
 

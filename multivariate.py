@@ -580,7 +580,7 @@ end_long = "2034-02-01"
 
 # ART
 arima_art = (13,1,6)
-# art_adjusted, exog_art = align_data(art_df.observed, cpi_df.observed) 
+art_adjusted, exog_art = align_data(art_df.observed, cpi_df.observed) 
 
 # Evaluate the model
 # eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
@@ -588,10 +588,10 @@ arima_art = (13,1,6)
 # print(eval_df) 
 
 sarima_art = [(4,1,2),(5,0,6,6)]
-art_adjusted, exog_art = align_data(art_df.observed, cpi_df.observed)
-eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
-eval_df = evaluate_model_with_Plots(art_adjusted, [sarima_art[1]], eval_df, exog_art, seasonal=True, index='art', arima_order=sarima_art[0])
-print(eval_df) 
+# art_adjusted, exog_art = align_data(art_df.observed, cpi_df.observed)
+# eval_df = pd.DataFrame(columns=["ARIMA", "SEASONAL", "AIC", "BIC", "MAE", "MSE", "RMSE", "MAPE %"]) # To store the most important evaluation metrics
+# eval_df = evaluate_model_with_Plots(art_adjusted, [sarima_art[1]], eval_df, exog_art, seasonal=True, index='art', arima_order=sarima_art[0])
+# print(eval_df) 
 
 art_train = art_adjusted[:int(0.8*len(art_adjusted))]
 art_test = art_adjusted[int(0.8*len(art_adjusted)):]
