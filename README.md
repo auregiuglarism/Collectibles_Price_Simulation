@@ -6,11 +6,11 @@ As trading between peers in the collectibles market becomes facilitated through 
 
 ## Files
 
-preprocessing.py extracts, tabularizes and adjusts data for inflation 
+preprocessing.py extracts, tabularizes and adjusts data for inflation. 
 
 univariate.py handles the univariate model creation, validation and forecasting for strategy 1. Univariate strategies 2 and 3 are handled in univariate_2.py and univariate_3.py respectively.
 
-multivariate.py handles the multivariate model creation, validation and forecasting 
+multivariate.py handles the multivariate model creation, validation and forecasting. 
 
 To get outputs, uncomment functions to display model outputs and accuracies as well as visualizations of the data. Modify the outputs by changing the function parameters of each forecast function in the main section of each files.
 
