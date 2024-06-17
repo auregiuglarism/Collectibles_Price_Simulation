@@ -12,6 +12,8 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 import statsmodels.api as sm
 
+##### MODEL #####
+
 def create_model(train, order, seasonal_order=None, approx=False):
     if seasonal_order == None: # ARIMA Model
         model = ARIMA(train, trend='n', order=order,  

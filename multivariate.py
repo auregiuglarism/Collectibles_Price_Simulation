@@ -13,16 +13,6 @@ import statsmodels.api as sm
 
 from scipy.stats import ttest_ind
 
-# Links to understand more about correlation, (S)ARIMAX, covariance
-
-# https://www.statology.org/how-to-read-covariance-matrix/#:~:text=The%20values%20along%20the%20diagonals%20of%20the%20matrix,matrix%20represent%20the%20covariances%20between%20the%20various%20subjects.
-# https://builtin.com/data-science/covariance-matrix
-
-# https://datagy.io/t-test-python/
-
-# TODO : Read paper : time series analysis to modeling to forecast 
-# TODO : Write down accuracy for each asset class
-
 ##### CORRELATION #####
 
 def compute_covariance(cov_df, index_df, variables):
@@ -179,7 +169,7 @@ def compute_t_test(index_df, variable, significance_level=0.05):
         print("The means differ significantly, correlation is significant and tells us the direction")
     else:
         # Accept the null hypothesis
-        print("There is so significant difference between the means, correlation is not significant")
+        print("There is no significant difference between the means, correlation is not significant")
     return t_stat, p_val
 
 
@@ -207,7 +197,6 @@ def create_model(train, order, exogenous_var, seasonal_order=None, index='wine')
         fit_results = model.fit()
         fit_results.save(f'models\{index}_sarimax.pkl') # Comment this when evaluating multiple models
 
-    # print(fit_results.summary()) # Comment this when evaluating multiple models
     training_residuals = fit_results.resid
 
     return fit_results, training_residuals

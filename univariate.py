@@ -12,33 +12,6 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 import statsmodels.api as sm
 
-# TODO: Report : Include a more detailed explanation (since you are the first one) of the indices used in this thesis (art, watch and wine) + sources
-# TODO: Report : Include a future work section of what could be done from here on out after my work for future researchers
-
-# Links to understand more about (S)ARIMA Parameters : 
-
-# https://en.wikipedia.org/wiki/Box%E2%80%93Jenkins_method
-# https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average
-# Paper to cite : https://otexts.com/fpp2/non-seasonal-arima.html#acf-and-pacf-plots
-
-# https://medium.com/latinxinai/time-series-forecasting-arima-and-sarima-450fb18a9941
-# https://neptune.ai/blog/arima-sarima-real-world-time-series-forecasting-guide
-# https://towardsdev.com/time-series-forecasting-part-5-cb2967f18164
-# https://www.geeksforgeeks.org/box-jenkins-methodology-for-arima-models/
-
-# https://towardsdatascience.com/understanding-the-seasonal-order-of-the-sarima-model-ebef613e40fa
-
-# https://dsri.maastrichtuniversity.nl/
-# https://medium.com/rapids-ai/arima-forecast-large-time-series-datasets-with-rapids-cuml-18428a00d02e
-# https://docs.rapids.ai/install#pip
-
-# https://www.sciencedirect.com/science/article/pii/S0925231219309178
-# https://stats.stackexchange.com/questions/124955/is-it-unusual-for-the-mean-to-outperform-arima/125016#125016
-
-# https://pdf.sciencedirectassets.com/271689/1-s2.0-S0304407616X00097/1-s2.0-S0304407616301713/main.pdf?X-Amz-Security-Token=IQoJb3JpZ2luX2VjEGEaCXVzLWVhc3QtMSJGMEQCIBGKZ%2BIrCxk2a71fYwONLJuBuxZpZtfv24kUuTvEb29PAiBb3iegDxBGuh8X4ehfJt9anx%2FUEtcdl%2FNaH4uwcouNzSq8BQjZ%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAUaDDA1OTAwMzU0Njg2NSIMzU09aK%2B0FVQpoXWbKpAFCeXs0jdJrJqxc6b7jeNX425Pn%2B64F2xaebXs9Rps%2FuDsumh61e%2BcbfIMrlELbWV%2FFBU3SkZVwT%2BRDSeRE4lQtHXHOZangJWjGwg1rOftvFMjgpKfOYhXZv7VFlw%2BcoWK0m%2BMlbePiO7UIifiPFaamT0d%2Fk2BNSa6bjrRq0Nvx6mFOL%2ByXiJpc5b0AFPCHuvGBJlrfIiT2f4qLgisIXAdW7n0J%2BFLyV7I38A%2BYbW2Ngq5H5nXNoSkyWLe7u8BLfMIOxmknPgL1yS%2BzQX%2FZMVoUuuSCQwOOJLV9NT6CbMaROnyg4rotDrQoWVf0W2cc%2FAMZvbEi0VEi0HiY2YjT3rRb%2F1nrurgAybRlXpw4mDgnhQn7X2udFeD35gcYXx8xGbBPCudYMGrSproLyH%2BjzSoJwZiGk%2B3VCx7GIc8rD0oZ6FLnS9mvm9WBSIDujfJaeekV4y7rJJDimz3xBB4g6CMTw%2FhkeZWDPl9%2FDJ1C9BvudrnWuuKV%2BI9TdHBVTl0jQ24b9zYdPtw77bF0EbKufqxZb89DVxAUlm7rrhg8tu%2BYRGmz0quVjZ1vWgJIgN50RWG6G77F68fOJHRfY5O5upn6VYhLizeyU%2FnbOF1DIPUu5PMxPhDPFD6L6Gj20y9sjFagrJAdj2hSXjHUdHuDPZJciXJ0s91dtd0mWeYVaaB%2FdHvRi1VM5Nw26vCrpEfTxZV%2BiBhcXGpS2A6vwWwDnvWNBkwixlRqu%2FhlEjN3AJoZ%2BgNKtEdUijYoIBUZMyoW5HooBWDctKF7yMq9BjndT%2Br9Q8jqS0Rltx7Dcr%2BD4%2BJvzpkhsgNvEht9m40N7Ui0jmfSTsB6qMq%2FzqoTyP8kHVVmUfJqxVstx%2F7me2eK35GWWUw%2FuPSsgY6sgFMH0RS5c5DfWtaDLYCPRFJ2HnYjUCGohdpMGKjqHGavXjWbMWJ9jTOwsIwWMuqYNFxSENfu9IvcayXs50iFZkip36UbyuOCuiecojmeVto%2FFV%2FD9eINpC5x3VL0hZdaNftEoixpAckcI3f9ClqQpVlKp7lUnNeojR%2FhFrcZNNPd4UDB8eYxr6ybgomQZRbFOIqIkxaC9EWQtmm5JPHncMvDbXJN2x91jTKUO6oKvPHjQPW&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240527T170829Z&X-Amz-SignedHeaders=host&X-Amz-Expires=300&X-Amz-Credential=ASIAQ3PHCVTYXNRMRAGR%2F20240527%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=5d1945dc2162a6a63dfd7fe1b86be1e1caca26b5217700889024b309bf81676a&hash=2afe5ca0247f8853be7fd4f9a7bfc146f4e634e2ea96fa779afa38a5770a7611&host=68042c943591013ac2b2430a89b270f6af2c76d8dfd086a07176afe7c76c2c61&pii=S0304407616301713&tid=spdf-034c920f-5125-43b5-84c0-83f620cc22eb&sid=87600c4d5d9e354ccd9b4a35cecdd1abe9a8gxrqb&type=client&tsoh=d3d3LnNjaWVuY2VkaXJlY3QuY29t&ua=140a5c5f02585b00525558&rr=88a79b747c909fe2&cc=nl
-# https://www.bing.com/search?pglt=41&q=olling-window+forecasting+approach+when+using+ARIMA&cvid=c360b87664694dfeb3f892b2d89e6f31&gs_lcrp=EgZjaHJvbWUyBggAEEUYOdIBCDE5NTlqMGoxqAIAsAIA&FORM=ANNTA1&adppc=EDGEXST&PC=ASTS
-# https://machinelearningmastery.com/arima-for-time-series-forecasting-with-python/
-
 ##### STATISTICAL TESTS #####
 
 def moving_average_smooth(df, window_size):

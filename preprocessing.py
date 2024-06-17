@@ -587,7 +587,6 @@ def main(univariate=True):
     ## Decompose the data (seasonality, trend and residual) ##
 
     # you can retrieve residuals, trend and seasonality from the decomposed data
-    # (additive by default until proven otherwise)
     wine_df_decomp = decomp_additive(wine_df, name='Wine Index')
     watch_df_decomp = decomp_additive(watch_df, name='Watch Index')
     art_df = art_df.drop(0) # Drop first row of art_df first, will cause problems for forecasting otherwise later on
